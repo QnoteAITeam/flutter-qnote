@@ -1,7 +1,10 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
-import 'features/splash/splash_screen.dart';
+import 'package:flutter_qnote/features/splash/splash_screen.dart';
 
+final colorScheme = ColorScheme.fromSeed(
+  seedColor: const Color.fromARGB(255, 124, 124, 255),
+  surface: const Color.fromARGB(255, 160, 160, 255),
+);
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
@@ -12,8 +15,12 @@ class MyApp extends StatelessWidget {
       title: 'Qnote',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        colorScheme: colorScheme,
         scaffoldBackgroundColor: Colors.white,
+        useMaterial3: true,
+
         fontFamily: 'SingleDay',
+
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,

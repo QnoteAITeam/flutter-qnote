@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../features/dashboard/dashboard_screen.dart';
+
+import 'package:flutter_qnote/features/dashboard/dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -28,11 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/logoicon.png',
-              width: 100,
-              height: 100,
-            ),
+            Image.asset('assets/images/logoicon.png', width: 100, height: 100),
             const SizedBox(height: 24),
             const Text(
               'Qnote',

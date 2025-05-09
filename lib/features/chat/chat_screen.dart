@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../diary/diary_detail_screen.dart';
+import 'package:flutter_qnote/features/diary/diary_detail_screen.dart';
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -39,21 +39,21 @@ class ChatScreen extends StatelessWidget {
             child: Column(
               children: [
                 _buildOptionButton(
-                    context,
-                    '어 나 생각보다 피곤해',
-                    onTap: () => _navigateToDiaryDetail(context)
+                  context,
+                  '어 나 생각보다 피곤해',
+                  onTap: () => _navigateToDiaryDetail(context),
                 ),
                 const SizedBox(height: 12),
                 _buildOptionButton(
-                    context,
-                    '오늘은 그냥 지치고 피곤해',
-                    onTap: () => _navigateToDiaryDetail(context)
+                  context,
+                  '오늘은 그냥 지치고 피곤해',
+                  onTap: () => _navigateToDiaryDetail(context),
                 ),
                 const SizedBox(height: 12),
                 _buildOptionButton(
-                    context,
-                    '오늘 하루은 잘 버텼어',
-                    onTap: () => _navigateToDiaryDetail(context)
+                  context,
+                  '오늘 하루은 잘 버텼어',
+                  onTap: () => _navigateToDiaryDetail(context),
                 ),
                 const SizedBox(height: 16),
 
@@ -111,7 +111,11 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOptionButton(BuildContext context, String text, {required VoidCallback onTap}) {
+  Widget _buildOptionButton(
+    BuildContext context,
+    String text, {
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       child: Container(

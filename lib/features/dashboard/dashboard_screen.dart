@@ -1,9 +1,9 @@
 // lib/features/dashboard/dashboard_screen.dart
 
 import 'package:flutter/material.dart';
-import '../../widgets/calendar_widget.dart';
+import 'package:flutter_qnote/features/chat/chat_screen.dart';
+import 'package:flutter_qnote/widgets/calendar_widget.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../chat/chat_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -81,7 +81,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: Colors.grey.shade300),
@@ -105,18 +107,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ChatScreen()),
-                      ),
+                      onPressed:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ChatScreen(),
+                            ),
+                          ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4A86F7),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text(
                         '작성하기 →',
@@ -130,7 +136,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: Colors.grey.shade300),
@@ -155,8 +164,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     SizedBox(height: 12),
                     Text(
-                          '오늘 생각보다 피곤했어.\n'
-                          '이만 자야겠다. 고생했어, 나😊',
+                      '오늘 생각보다 피곤했어.\n'
+                      '이만 자야겠다. 고생했어, 나😊',
                       style: TextStyle(fontSize: 15, height: 1.5),
                     ),
                   ],

@@ -1,9 +1,9 @@
-name: figma_project
-description: A new Flutter project.
+name: flutter_qnote
+description: AI_Qnote_app
 version: 1.0.0+1
 
 environment:
-  sdk: '^3.7.0'
+  sdk: "^3.7.0"
 
 dependencies:
   flutter:
@@ -12,6 +12,9 @@ dependencies:
   table_calendar: ^3.0.0
   intl: ^0.18.0
   font_awesome_flutter: ^10.6.0
+  http: ^1.4.0
+  riverpod: ^2.6.1
+  flutter_secure_storage: ^9.2.4
 
 dev_dependencies:
   flutter_test:
@@ -22,6 +25,8 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/kakao_login_large_wide.png
+    - assets/images/qnote_icon.png
 
   fonts:
     - family: SingleDay
