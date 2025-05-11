@@ -116,7 +116,8 @@ class ApiService {
 
   //chatGpt
   static Future<SendMessageDto> sendMessageToAI(String message) async {
-    final url = Uri.parse('$baseUrl/chat-messages/openai/send-message');
+    print('User가, AI에게 $message 전송하였습니다.');
+    final url = Uri.parse('$baseUrl/openai/send-message');
 
     final response = await http.post(
       url,
@@ -127,11 +128,11 @@ class ApiService {
       body: jsonEncode({'message': message}),
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 201) {
       // return SendMessageRequestDto.fromJson(jsonDecode(response.body));
 
       //임시 dummy 값입니다.
-      return SendMessageDto.dummy();
+      return SendMessageDto.fromJsonByAssistant(jsonDecode(response.body));
     } else {
       throw Exception('Failed to send message: ${response.body}');
     }

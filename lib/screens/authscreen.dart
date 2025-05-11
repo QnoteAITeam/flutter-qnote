@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_qnote/auth/auth_api.dart';
 import 'package:flutter_qnote/widgets/emailPasswordForm.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -11,9 +12,38 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   //OauthKakaoBox 눌렸는지 확인하는 변수
   bool _isPressed = false;
+  String? _enteredEmail;
+  String? _enteredPassword;
 
-  void _handleKakaoLogin() {
-    //카카오 Oauth 인증해서 accessToken 받으면 서버로 날려서, 우리만의 전용토큰을 전역 provider에다가 넣고 상태 관리를 할 것임.
+  void _saveForm(String email, String password) {
+    _enteredEmail = email;
+    _enteredPassword = password;
+  }
+
+  void _handleKakaoLogin() {}
+  void _handleLocalLogin(
+    String email,
+    String password,
+    BuildContext context,
+  ) async {
+    //로그인 시도... 없으면 계정 만들어버리기.
+
+    var loginTry = await AuthApi.loginFetch(email, password);
+    if (loginTry) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    await AuthApi.createAccount(email, password);
+    loginTry = await AuthApi.loginFetch(email, password);
+
+    if (!loginTry) {
+      print('authscreendart localLogin Exception');
+    }
+
+    if (loginTry) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -30,36 +60,16 @@ class _AuthScreenState extends State<AuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('assets/qnote_icon.png', width: 200),
+                Image.asset('assets/images/qnote_icon.png', width: 200),
 
                 const SizedBox(height: 30),
 
-                const EmailPasswordForm(),
-                //
-                InkWell(
-                  onTap: _handleKakaoLogin,
-                  onHighlightChanged: (value) {
-                    setState(() {
-                      _isPressed = value;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        _isPressed
-                            ? Colors.black.withValues(alpha: 0.2)
-                            : Colors.transparent,
-                        BlendMode.darken,
-                      ),
-                      child: Image.asset(
-                        'assets/kakao_login_large_wide.png',
-                        width: 300,
-                      ),
-                    ),
-                  ),
+                EmailPasswordForm(
+                  handleLocalLogin: _handleLocalLogin,
+                  handleKakaoLogin: _handleKakaoLogin,
+                  saveForm: _saveForm,
                 ),
+
                 //
               ],
             ),

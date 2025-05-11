@@ -1,8 +1,10 @@
 //이 메세지는 누가 작성하였나.. system은 우리 서버측, assistance는.. AI, user는 유저
+import 'package:flutter/foundation.dart';
+
 enum MessageRole { system, assistance, user }
 
 //Ai의 상태, asking : 묻고 있음, done 이제 끝났고, text에는 일기의 내용
-enum MessageState { asking, done }
+enum MessageState { asking, done, user }
 
 class SendMessageDto {
   SendMessageDto({
@@ -15,16 +17,40 @@ class SendMessageDto {
   final MessageState state;
   final String message;
 
+  factory SendMessageDto.fromMessageByUser(String message) {
+    return SendMessageDto(
+      role: MessageRole.user,
+
+      state: MessageState.user,
+      message: message,
+    );
+  }
+
+  factory SendMessageDto.fromJsonByUser(Map<String, dynamic> json) {
+    return SendMessageDto(
+      role: MessageRole.user,
+
+      state: MessageState.user,
+      message: json['message'],
+    );
+  }
+
   factory SendMessageDto.fromJson(Map<String, dynamic> json) {
     return SendMessageDto(
-      role: MessageRole.values.firstWhere(
-        (e) => e.name == json['role'],
-        orElse: () => MessageRole.user,
-      ),
-      state: MessageState.values.firstWhere(
-        (e) => e.name == json['state'],
-        orElse: () => MessageState.done,
-      ),
+      role:
+          json['role'] == 'assistant'
+              ? MessageRole.assistance
+              : MessageRole.user,
+      state:
+          json['state'] == 'asking' ? MessageState.asking : MessageState.done,
+      message: json['message'],
+    );
+  }
+
+  factory SendMessageDto.fromJsonByAssistant(Map<String, dynamic> json) {
+    return SendMessageDto(
+      role: MessageRole.assistance,
+      state: json['asking'] == 1 ? MessageState.asking : MessageState.done,
       message: json['message'],
     );
   }

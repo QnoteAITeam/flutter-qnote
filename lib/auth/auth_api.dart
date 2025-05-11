@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_qnote/models/user.dart';
 import 'package:flutter_qnote/screens/authscreen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -9,13 +10,17 @@ class Tokens {
   String? refreshToken;
 
   Tokens(this.accessToken, this.refreshToken);
+
+  factory Tokens.from(Map<String, dynamic> json) {
+    return Tokens(json['accessToken'], json['accessToken']);
+  }
 }
 
 class AuthApi {
   static String baseUrl = 'http://localhost:3000';
 
   //refreshToken을 활용하여, accessToken 재발급.
-  static Future<Tokens?> storeToken(String? refreshToken) async {
+  static Future<Tokens?> restoreToken(String? refreshToken) async {
     if (refreshToken == null) return null;
 
     final response = await http.post(
@@ -23,7 +28,7 @@ class AuthApi {
       headers: {'Authorization': 'Bearer $refreshToken'},
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 201) {
       final json = jsonDecode(response.body);
       return Tokens(json['accessToken'], json['refreshToken']);
     } else {
@@ -37,6 +42,43 @@ class AuthApi {
 
     if (accessToken == null) return null;
     return 'Bearer $accessToken';
+  }
+
+  static Future<void> updateTokens(Tokens tokens) async {
+    const _storage = FlutterSecureStorage();
+
+    await _storage.write(key: 'accessToken', value: tokens.accessToken);
+    await _storage.write(key: 'refreshToken', value: tokens.refreshToken);
+  }
+
+  static void logOut() {
+    const _storage = FlutterSecureStorage();
+
+    _storage.delete(key: 'accessToken');
+    _storage.delete(key: 'refreshToken');
+  }
+
+  static Future<bool> loginFetch(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/local-login'),
+      body: {'email': email, 'password': password},
+    );
+
+    if (response.statusCode == 201) {
+      final Tokens tokens = Tokens.from(jsonDecode(response.body));
+      updateTokens(tokens);
+      return true;
+    }
+    return false;
+  }
+
+  static Future<User> createAccount(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/signup-local'),
+      body: {'email': email, 'password': password},
+    );
+
+    return User.fromJson(jsonDecode(response.body));
   }
 
   static Future<String?> getRefreshTokenHeader() async {
@@ -68,7 +110,7 @@ class AuthApi {
         headers: {'Authorization': accessTokenHeader},
       );
 
-      if (response.statusCode == 200) return true;
+      if (response.statusCode == 201) return true;
     }
 
     String? refreshToken = await getRefreshToken();
@@ -76,32 +118,24 @@ class AuthApi {
     // valid가 false이면 refreshToken을 사용하여 새로운 accessToken을 받음
     if (refreshToken == null) return false;
 
-    final Tokens? tokens = await storeToken(refreshToken);
+    final Tokens? tokens = await restoreToken(refreshToken);
 
     //refreshToken 만료.
     if (tokens == null) return false;
 
     // 새로운 accessToken과 refreshToken을 저장
 
-    const _storage = FlutterSecureStorage();
-
-    _storage.write(
-      key: 'accessToken',
-      value: tokens.accessToken, //
-    );
-
-    _storage.write(key: 'refreshToken', value: tokens.refreshToken);
-
+    await updateTokens(tokens);
     return true;
   }
 
-  static void beforeUseAccessToken(BuildContext context) async {
+  static Future<void> beforeUseAccessToken(BuildContext context) async {
     final isValid = await isValidAccessToken();
-    if (!isValid) popLoginScreen(context);
+    if (!isValid) await popLoginScreen(context);
   }
 
-  static void popLoginScreen(BuildContext context) {
-    Navigator.of(context).push(
+  static Future<void> popLoginScreen(BuildContext context) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) {
           return AuthScreen();
