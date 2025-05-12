@@ -6,7 +6,6 @@ class User {
   final DateTime createdAt;
   final DateTime updateAt;
   final String? profileImage;
-  final String? password;
   final String role;
   final String? phoneNumber;
   final bool emailVerified;
@@ -21,7 +20,6 @@ class User {
     required this.createdAt,
     required this.updateAt,
     this.profileImage,
-    this.password,
     required this.role,
     this.phoneNumber,
     required this.emailVerified,
@@ -38,7 +36,6 @@ class User {
       createdAt: DateTime.parse(json['createdAt']),
       updateAt: DateTime.parse(json['updateAt']),
       profileImage: json['profileImage'],
-      password: json['password'],
       role: json['role'],
       phoneNumber: json['phoneNumber'],
       emailVerified: json['emailVerified'],
@@ -56,7 +53,6 @@ class User {
       'createdAt': createdAt.toIso8601String(),
       'updateAt': updateAt.toIso8601String(),
       'profileImage': profileImage,
-      'password': password,
       'role': role,
       'phoneNumber': phoneNumber,
       'emailVerified': emailVerified,

@@ -1,5 +1,6 @@
 //이 메세지는 누가 작성하였나.. system은 우리 서버측, assistance는.. AI, user는 유저
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 enum MessageRole { system, assistance, user }
 
@@ -65,5 +66,28 @@ class SendMessageDto {
 
   Map<String, dynamic> toJson() {
     return {'role': role.name, 'state': state.name, 'message': message};
+  }
+
+  static Widget _buildMessageWidget(BuildContext context, SendMessageDto msg) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Align(
+        alignment:
+            msg.role == MessageRole.user
+                ? Alignment.topRight
+                : Alignment.topLeft,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color:
+                msg.role == MessageRole.user
+                    ? Colors.blue[100]
+                    : Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(msg.message),
+        ),
+      ),
+    );
   }
 }
