@@ -28,6 +28,7 @@ flutter:
     - assets/images/
     - assets/images/kakao_login_large_wide.png
     - assets/images/qnote_icon.png
+    - .env
 
   fonts:
     - family: SingleDay
