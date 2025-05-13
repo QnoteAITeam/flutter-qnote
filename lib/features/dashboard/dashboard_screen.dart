@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_qnote/features/chat/chat_screen.dart';
 import 'package:flutter_qnote/widgets/calendar_widget.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
+import 'package:flutter_qnote/features/search/search_screen.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
   @override
@@ -183,7 +183,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedItemColor: const Color(0xFF4A86F7),
         unselectedItemColor: Colors.grey,
         onTap: (idx) {
-          if (idx == 2) {
+          if (idx == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            );
+          } else if (idx == 2) {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ChatScreen()),
