@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/features/splash/splash_screen.dart';
 
 final colorScheme = ColorScheme.fromSeed(
   seedColor: const Color.fromARGB(255, 124, 124, 255),
   surface: const Color.fromARGB(255, 160, 160, 255),
 );
-void main() => runApp(const MyApp());
+Future<void> main() async {
+  await dotenv.load(fileName: '.env');
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

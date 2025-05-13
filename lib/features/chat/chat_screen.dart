@@ -34,8 +34,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void init() async {
-    await AuthApi.beforeUseAccessToken(context);
-    _chatSession = await ApiService.createNewSession();
+    await AuthApi.getInstance().beforeUseAccessToken(context);
+    _chatSession = await ApiService.getInstance().createNewSession();
 
     print('현재 보내는 채팅 세션은, ChatSession Primary_ID = ${_chatSession.id} 입니다.');
 
@@ -56,7 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _textController.clear();
 
-    final response = await ApiService.sendMessageToAI(data);
+    final response = await ApiService.getInstance().sendMessageToAI(data);
 
     setState(() {
       chatMessages.add(SendMessageDto.fromMessageByUser(data));

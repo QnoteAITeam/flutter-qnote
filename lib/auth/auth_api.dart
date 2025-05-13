@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/models/user.dart';
 import 'package:flutter_qnote/screens/authscreen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -17,10 +19,21 @@ class Tokens {
 }
 
 class AuthApi {
-  static String baseUrl = 'http://localhost:3000';
+  final String? baseUrl;
+
+  static AuthApi? _instance;
+
+  AuthApi._internal(this.baseUrl);
+
+  static AuthApi getInstance() {
+    if (_instance != null) return _instance!;
+
+    _instance = AuthApi._internal(dotenv.env['API_URL']);
+    return _instance!;
+  }
 
   //refreshToken을 활용하여, accessToken 재발급.
-  static Future<Tokens?> restoreToken(String? refreshToken) async {
+  Future<Tokens?> restoreToken(String? refreshToken) async {
     if (refreshToken == null) return null;
 
     final response = await http.post(
@@ -36,7 +49,7 @@ class AuthApi {
     }
   }
 
-  static Future<String?> getAccessTokenHeader() async {
+  Future<String?> getAccessTokenHeader() async {
     const _storage = FlutterSecureStorage();
     String? accessToken = await _storage.read(key: 'accessToken');
 
@@ -44,21 +57,21 @@ class AuthApi {
     return 'Bearer $accessToken';
   }
 
-  static Future<void> updateTokens(Tokens tokens) async {
+  Future<void> updateTokens(Tokens tokens) async {
     const _storage = FlutterSecureStorage();
 
     await _storage.write(key: 'accessToken', value: tokens.accessToken);
     await _storage.write(key: 'refreshToken', value: tokens.refreshToken);
   }
 
-  static void logOut() {
+  void logOut() {
     const _storage = FlutterSecureStorage();
 
     _storage.delete(key: 'accessToken');
     _storage.delete(key: 'refreshToken');
   }
 
-  static Future<bool> loginFetch(String email, String password) async {
+  Future<bool> loginFetch(String email, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/local-login'),
       body: {'email': email, 'password': password},
@@ -72,7 +85,7 @@ class AuthApi {
     return false;
   }
 
-  static Future<User> createAccount(String email, String password) async {
+  Future<User> createAccount(String email, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/signup-local'),
       body: {'email': email, 'password': password},
@@ -81,7 +94,7 @@ class AuthApi {
     return User.fromJson(jsonDecode(response.body));
   }
 
-  static Future<String?> getRefreshTokenHeader() async {
+  Future<String?> getRefreshTokenHeader() async {
     const _storage = FlutterSecureStorage();
     String? refreshToken = await _storage.read(key: 'refreshToken');
 
@@ -89,18 +102,18 @@ class AuthApi {
     return 'Bearer $refreshToken';
   }
 
-  static Future<String?> getAccessToken() async {
+  Future<String?> getAccessToken() async {
     const _storage = FlutterSecureStorage();
     return _storage.read(key: 'accessToken');
   }
 
-  static Future<String?> getRefreshToken() async {
+  Future<String?> getRefreshToken() async {
     const _storage = FlutterSecureStorage();
     return _storage.read(key: 'refreshToken');
   }
 
   //사용할 수 없으면, restore까지 할 것이고, 그럼에도 불가능해서, 로그인을 해야하면, false 리턴
-  static Future<bool> isValidAccessToken() async {
+  Future<bool> isValidAccessToken() async {
     String? accessTokenHeader = await getAccessTokenHeader();
 
     if (accessTokenHeader != null) {
@@ -129,12 +142,17 @@ class AuthApi {
     return true;
   }
 
-  static Future<void> beforeUseAccessToken(BuildContext context) async {
+  Future<void> beforeUseAccessToken(BuildContext context) async {
+    if (baseUrl == null) {
+      print('.env 파일이 진짜 있나요??? 확인해주세요.. 프로젝트 폴더 바로 .env 넣어주세요.');
+      throw new FileSystemException('ENV 파일이 있는지 확인해주세요.');
+    }
+
     final isValid = await isValidAccessToken();
     if (!isValid) await popLoginScreen(context);
   }
 
-  static Future<void> popLoginScreen(BuildContext context) async {
+  Future<void> popLoginScreen(BuildContext context) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) {

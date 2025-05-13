@@ -28,14 +28,14 @@ class _AuthScreenState extends State<AuthScreen> {
   ) async {
     //로그인 시도... 없으면 계정 만들어버리기.
 
-    var loginTry = await AuthApi.loginFetch(email, password);
+    var loginTry = await AuthApi.getInstance().loginFetch(email, password);
     if (loginTry) {
       Navigator.of(context).pop();
       return;
     }
 
-    await AuthApi.createAccount(email, password);
-    loginTry = await AuthApi.loginFetch(email, password);
+    await AuthApi.getInstance().createAccount(email, password);
+    loginTry = await AuthApi.getInstance().loginFetch(email, password);
 
     if (!loginTry) {
       print('authscreendart localLogin Exception');
