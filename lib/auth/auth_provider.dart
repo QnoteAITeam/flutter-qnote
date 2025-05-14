@@ -1,81 +1,74 @@
-import 'package:flutter_qnote/auth/auth_api.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:riverpod/riverpod.dart';
+// import 'package:flutter_qnote/auth/auth_api.dart';
+// import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+// import 'package:riverpod/riverpod.dart';
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(),
-);
+// final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
+//   (ref) => AuthNotifier(),
+// );
 
-class AuthState {
-  final String? accessToken;
+// class AuthState {
+//   final String? accessToken;
 
-  AuthState({this.accessToken});
+//   AuthState({this.accessToken});
 
-  bool get isLoggedIn {
-    return accessToken != null;
-  }
+//   bool get isLoggedIn {
+//     return accessToken != null;
+//   }
 
-  AuthState copyWith({String? accessToken}) {
-    return AuthState(accessToken: accessToken ?? this.accessToken);
-  }
-}
+//   AuthState copyWith({String? accessToken}) {
+//     return AuthState(accessToken: accessToken ?? this.accessToken);
+//   }
+// }
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  final _storage = const FlutterSecureStorage();
+// class AuthNotifier extends StateNotifier<AuthState> {
+//   final _storage = const FlutterSecureStorage();
 
-  AuthNotifier() : super(AuthState()) {
-    _initState();
-  }
+//   AuthNotifier() : super(AuthState()) {
+//     _initState();
+//   }
 
-  //기존의 secureStorage의, 토큰들을 사용하여, 초기 AuthState를 구축한다.
-  Future<void> _initState() async {
-    final token = await _storage.read(key: 'accessToken');
-    final refresh = await _storage.read(key: 'refreshToken');
+//   //기존의 secureStorage의, 토큰들을 사용하여, 초기 AuthState를 구축한다.
+//   Future<void> _initState() async {
+//     final token = await _storage.read(key: 'accessToken');
+//     final refresh = await _storage.read(key: 'refreshToken');
 
-    if (token != null && refresh != null) {
-      final isValid = await _isValidAccessToken(token);
+//     if (token != null && refresh != null) {
+//       final isValid = await isValidAccessToken(token);
 
-      if (isValid) {
-        state = AuthState(accessToken: token);
-      } else {
-        await tryRefreshToken();
-      }
-    }
-  }
+//       if (isValid) {
+//         state = AuthState(accessToken: token);
+//       } else {
+//         await tryRefreshToken();
+//       }
+//     }
+//   }
 
-  Future<void> login(String accessToken, String refreshToken) async {
-    await _storage.write(key: 'accessToken', value: accessToken);
-    await _storage.write(key: 'refreshToken', value: refreshToken);
-    state = AuthState(accessToken: accessToken);
-  }
+//   Future<void> login(String accessToken, String refreshToken) async {
+//     await _storage.write(key: 'accessToken', value: accessToken);
+//     await _storage.write(key: 'refreshToken', value: refreshToken);
+//     state = AuthState(accessToken: accessToken);
+//   }
 
-  Future<void> logout() async {
-    await _storage.deleteAll();
-    state = AuthState(accessToken: null);
-  }
+//   Future<void> logout() async {
+//     await _storage.deleteAll();
+//     state = AuthState(accessToken: null);
+//   }
 
-  //refreshtoken 을 사용하여, accesstoken 복구 함수.
-  //성공 여부를 Future<bool> 로 반환한다.
-  Future<bool> tryRefreshToken() async {
-    final refresh = await _storage.read(key: 'refreshToken');
-    if (refresh == null) return false;
+//   //refreshtoken 을 사용하여, accesstoken 복구 함수.
+//   //성공 여부를 Future<bool> 로 반환한다.
+//   Future<bool> tryRefreshToken() async {
+//     final refresh = await _storage.read(key: 'refreshToken');
+//     if (refresh == null) return false;
 
-    final newToken = await AuthApi.refreshToken(refresh);
+//     final tokens = await AuthApi.storeToken(refresh);
 
-    if (newToken != null) {
-      await _storage.write(key: 'accessToken', value: newToken);
-      state = state.copyWith(accessToken: newToken);
-      return true;
-    } else {
-      await logout();
-      return false;
-    }
-  }
-
-  //AccessToken를 서버로 보내 유효성 검사해야함.
-  Future<bool> _isValidAccessToken(String token) async {
-    //TO DO
-    //CONNECT SERVER AUTH SYSTEM
-    return true;
-  }
-}
+//     if (tokens != null) {
+//       await _storage.write(key: 'accessToken', value: tokens.accessToken);
+//       state = state.copyWith(accessToken: tokens.refreshToken);
+//       return true;
+//     } else {
+//       await logout();
+//       return false;
+//     }
+//   }
+// }
