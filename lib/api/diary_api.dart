@@ -17,12 +17,12 @@ class DiaryApi {
   }
 
   Future<Map<String, String>> _authHeader() async {
-    final token = await AuthApi.getInstance().getAccessTokenHeader();
+    final token = await AuthApi.getInstance.getAccessTokenHeader();
     return {'Authorization': token!, 'Content-Type': 'application/json'};
   }
 
   Future<Diary> createDiary(Diary dto) async {
-    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+    AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.post(
       Uri.parse('$baseUrl/diaries'),
@@ -39,7 +39,7 @@ class DiaryApi {
 
   //한 페이지당 50개 단위로 줍니다.
   Future<List<Diary>> getAllDiaries(int page) async {
-    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+    AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.get(
       Uri.parse('$baseUrl/diaries?page=$page'),
@@ -54,7 +54,7 @@ class DiaryApi {
 
   //
   Future<List<Diary>> getRecentDiaries(int count) async {
-    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+    AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.get(
       Uri.parse('$baseUrl/diaries/recent?count=$count'),
@@ -71,7 +71,7 @@ class DiaryApi {
 
   //가장 최근 다이어리 가져오기
   Future<Diary> getMostRecentDiary() async {
-    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+    AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.get(
       Uri.parse('$baseUrl/diaries/recent/one'),
@@ -86,7 +86,7 @@ class DiaryApi {
   }
 
   Future<Diary> getDiaryById(int id) async {
-    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+    AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.get(Uri.parse('$baseUrl/diaries/$id'));
 

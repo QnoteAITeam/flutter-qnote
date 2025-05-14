@@ -37,7 +37,6 @@ class _ChatScreenState extends State<ChatScreen> {
     // backgroundImage: AssetImage('assets/images/ai_avatar.png'), // 실제 에셋 사용 시 주석 해제
   );
 
-
   @override
   void initState() {
     super.initState();
@@ -56,11 +55,15 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           // chatMessages 리스트가 비어있을 경우에만 초기 AI 질문 메시지를 추가합니다.
           if (chatMessages.isEmpty) {
-            chatMessages.add(SendMessageDto(
-              role: MessageRole.assistance, // send_message_dto.dart의 enum과 일치 확인
-              state: MessageState.asking,  // AI가 질문하는 상태임을 명시
-              message: '안녕! 오늘 아침 뭐 먹었어? 😊',
-            ));
+            chatMessages.add(
+              SendMessageDto(
+                role:
+                    MessageRole
+                        .assistance, // send_message_dto.dart의 enum과 일치 확인
+                state: MessageState.asking, // AI가 질문하는 상태임을 명시
+                message: '안녕! 오늘 아침 뭐 먹었어? 😊',
+              ),
+            );
           }
           _isCreatingSession = false; // 세션 생성 완료 (로딩 UI 종료)
         });
@@ -69,11 +72,13 @@ class _ChatScreenState extends State<ChatScreen> {
       print("Error initializing chat session: $e");
       if (mounted) {
         setState(() {
-          chatMessages.add(SendMessageDto(
+          chatMessages.add(
+            SendMessageDto(
               role: MessageRole.system,
               state: MessageState.done,
-              message: "채팅을 시작하는 중 오류가 발생했습니다."
-          ));
+              message: "채팅을 시작하는 중 오류가 발생했습니다.",
+            ),
+          );
           _isCreatingSession = false;
         });
       }
@@ -106,7 +111,11 @@ class _ChatScreenState extends State<ChatScreen> {
       //    ApiService.sendMessageToAI는 SendMessageDto를 반환한다고 가정
       //    서버에 보낼 때는 사용자가 입력한 'data' 문자열만 필요할 수 있음,
       //    또는 SendMessageDto 객체 전체를 보낼 수도 있음 (API 설계에 따라 다름)
-      final SendMessageDto aiResponseFromServer = await ApiService.getInstance().sendMessageToAI(data); // 또는 userMessage 객체
+
+      // NOTE: 'data'만 전달해도 서버 측에서 SendMessageDto 형태로 응답을 반환함.
+      //       반환된 aiResponseFromServer는 그대로 사용 가능.
+      final SendMessageDto aiResponseFromServer = await ApiService.getInstance
+          .sendMessageToAI(data); // 또는 userMessage 객체
 
       // 3. 서버로부터 받은 AI 응답(SendMessageDto)을 화면에 표시
       if (mounted) {
@@ -119,11 +128,13 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         // 오류 발생 시 더미 메시지 또는 시스템 메시지 사용 가능
         // chatMessages.add(SendMessageDto.dummy()); // 더미 메시지 사용 예시
-        chatMessages.add(SendMessageDto(
+        chatMessages.add(
+          SendMessageDto(
             role: MessageRole.system, // 또는 MessageRole.assistant
             state: MessageState.done, // 혹은 오류 상태를 나타내는 enum 값이 있다면 그것 사용
-            message: "죄송합니다, AI와 대화 중 문제가 발생했습니다."
-        ));
+            message: "죄송합니다, AI와 대화 중 문제가 발생했습니다.",
+          ),
+        );
         setState(() {}); // chatMessages 리스트 변경 후 UI 갱신
       }
     }
@@ -142,7 +153,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // ApiService.sendMessageToAI 메소드가 SendMessageDto를 인자로 받거나,
       // 혹은 String을 인자로 받는 새로운 메소드가 필요할 수 있습니다.
       // 여기서는 data 대신 optionText를 사용한다고 가정합니다.
-      final SendMessageDto aiResponseFromServer = await ApiService.getInstance()
+      final SendMessageDto aiResponseFromServer = await ApiService.getInstance
           .sendMessageToAI(optionText); // 또는 적절한 DTO를 만들어서 전달
 
       // (선택 사항) "AI가 입력 중..." 메시지 제거 (만약 추가했다면)
@@ -169,11 +180,13 @@ class _ChatScreenState extends State<ChatScreen> {
       print("Error sending message/option to AI: $e");
       if (mounted) {
         setState(() {
-          chatMessages.add(SendMessageDto(
+          chatMessages.add(
+            SendMessageDto(
               role: MessageRole.system,
               state: MessageState.done,
-              message: errorMessage
-          ));
+              message: errorMessage,
+            ),
+          );
         });
       }
     }
@@ -203,9 +216,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text(
                   'AI 챗봇',
                   style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.black,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   '당신의 하루를 저에게 알려주세요!',
@@ -222,68 +236,90 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-      body: _isCreatingSession
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: chatMessages.length,
-              itemBuilder: (context, index) {
-                final msg = chatMessages[index];
-                bool isAiMessage = msg.role == MessageRole.assistance;
+      body:
+          _isCreatingSession
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: chatMessages.length,
+                      itemBuilder: (context, index) {
+                        final msg = chatMessages[index];
+                        bool isAiMessage = msg.role == MessageRole.assistance;
 
-                bool isInitialForAvatar = isAiMessage &&
-                    chatMessages.where((m) => m.role == MessageRole.assistance).toList().indexOf(msg) == 0;
-                return _buildChatMessageBubble(
-                  msg.message ?? "...",
-                  DateTime.now(), // 임시 타임스탬프 (UI 모델 사용 권장)
-                  isAiMessage,
-                  isInitialMessage: isInitialForAvatar,
-                );
-              },
-            ),
-          ),
-          if (chatMessages.length == 1 &&
-              chatMessages.first.role == MessageRole.assistance &&
-              chatMessages.first.state == MessageState.asking &&
-              !_isCreatingSession)
-            _buildInitialView(mode: InitialViewMode.optionsOnly), // 옵션만 표시하도록 플래그 전달
-          _buildInputArea(),
-        ],
-      ),
+                        bool isInitialForAvatar =
+                            isAiMessage &&
+                            chatMessages
+                                    .where(
+                                      (m) => m.role == MessageRole.assistance,
+                                    )
+                                    .toList()
+                                    .indexOf(msg) ==
+                                0;
+                        return _buildChatMessageBubble(
+                          msg.message ?? "...",
+                          DateTime.now(), // 임시 타임스탬프 (UI 모델 사용 권장)
+                          isAiMessage,
+                          isInitialMessage: isInitialForAvatar,
+                        );
+                      },
+                    ),
+                  ),
+                  if (chatMessages.length == 1 &&
+                      chatMessages.first.role == MessageRole.assistance &&
+                      chatMessages.first.state == MessageState.asking &&
+                      !_isCreatingSession)
+                    _buildInitialView(
+                      mode: InitialViewMode.optionsOnly,
+                    ), // 옵션만 표시하도록 플래그 전달
+                  _buildInputArea(),
+                ],
+              ),
     );
   }
 
   Widget _buildInitialView({InitialViewMode mode = InitialViewMode.full}) {
-// 기본값은 전체 UI
+    // 기본값은 전체 UI
     // 옵션 버튼들 생성 로직 (공통)
     Widget optionButtons = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildOptionButton(context, '오늘 아침으로 샐러드 먹었어',
-            onTap: () => _onOptionTapped('오늘 아침으로 샐러드 먹었어')),
+        _buildOptionButton(
+          context,
+          '오늘 아침으로 샐러드 먹었어',
+          onTap: () => _onOptionTapped('오늘 아침으로 샐러드 먹었어'),
+        ),
         const SizedBox(height: 12),
-        _buildOptionButton(context, '간단하게 시리얼 먹었어',
-            onTap: () => _onOptionTapped('간단하게 시리얼 먹었어')),
+        _buildOptionButton(
+          context,
+          '간단하게 시리얼 먹었어',
+          onTap: () => _onOptionTapped('간단하게 시리얼 먹었어'),
+        ),
         const SizedBox(height: 12),
-        _buildOptionButton(context, '시간이 없어서 아침을 안먹었어',
-            onTap: () => _onOptionTapped('시간이 없어서 아침을 안먹었어')),
+        _buildOptionButton(
+          context,
+          '시간이 없어서 아침을 안먹었어',
+          onTap: () => _onOptionTapped('시간이 없어서 아침을 안먹었어'),
+        ),
       ],
     );
 
     // 초기 AI 메시지 생성 로직 (공통)
     Widget aiInitialMessage = _buildChatMessageBubble(
-        '안녕! 오늘 아침 뭐 먹었어? 😊', DateTime.now(), true,
-        isInitialMessage: true);
+      '안녕! 오늘 아침 뭐 먹었어? 😊',
+      DateTime.now(),
+      true,
+      isInitialMessage: true,
+    );
 
     // 파라미터 'mode'에 따라 다른 UI 반환
     switch (mode) {
       case InitialViewMode.aiMessageOnly:
         return aiInitialMessage; // 초기 AI 메시지만 반환
       case InitialViewMode.optionsOnly:
-      // 옵션 버튼들만 반환 (입력창 위에 위치할 때 사용)
+        // 옵션 버튼들만 반환 (입력창 위에 위치할 때 사용)
         return Container(
           padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
           color: Colors.white,
@@ -291,7 +327,7 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       case InitialViewMode.full: // 기본값
       default:
-      // 전체 초기 UI (AI 메시지 + 옵션 버튼들) 반환
+        // 전체 초기 UI (AI 메시지 + 옵션 버튼들) 반환
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -306,21 +342,28 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Widget _buildChatMessageBubble(String message, DateTime timestamp, bool isAiMessage, {bool isInitialMessage = false}) {
+  Widget _buildChatMessageBubble(
+    String message,
+    DateTime timestamp,
+    bool isAiMessage, {
+    bool isInitialMessage = false,
+  }) {
     final align = isAiMessage ? Alignment.centerLeft : Alignment.centerRight;
-    final bubbleColor = isAiMessage ? Colors.grey[200] : const Color(0xFF4A86F7);
+    final bubbleColor =
+        isAiMessage ? Colors.grey[200] : const Color(0xFF4A86F7);
     final textColor = isAiMessage ? Colors.black87 : Colors.white;
-    final radius = isAiMessage
-        ? const BorderRadius.only(
-      topRight: Radius.circular(20),
-      bottomLeft: Radius.circular(20),
-      bottomRight: Radius.circular(20),
-    )
-        : const BorderRadius.only(
-      topLeft: Radius.circular(20),
-      bottomLeft: Radius.circular(20),
-      topRight: Radius.circular(20),
-    );
+    final radius =
+        isAiMessage
+            ? const BorderRadius.only(
+              topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
+            )
+            : const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              bottomLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            );
 
     return Align(
       alignment: align,
@@ -343,7 +386,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 borderRadius: radius,
               ),
               child: Column(
-                crossAxisAlignment: isAiMessage ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                crossAxisAlignment:
+                    isAiMessage
+                        ? CrossAxisAlignment.start
+                        : CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
@@ -368,10 +414,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildOptionButton(
-      BuildContext context,
-      String text, {
-        required VoidCallback onTap,
-      }) {
+    BuildContext context,
+    String text, {
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -387,7 +433,10 @@ class _ChatScreenState extends State<ChatScreen> {
             Icon(Icons.circle_outlined, size: 18, color: Colors.brown[300]),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.black87)),
+              child: Text(
+                text,
+                style: const TextStyle(fontSize: 15, color: Colors.black87),
+              ),
             ),
           ],
         ),
@@ -405,7 +454,7 @@ class _ChatScreenState extends State<ChatScreen> {
             offset: const Offset(0, -1),
             blurRadius: 4,
             color: Colors.grey.withOpacity(0.15),
-          )
+          ),
         ],
       ),
       child: SafeArea(
@@ -413,7 +462,11 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.add_circle_outline, color: Colors.grey[500], size: 28),
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: Colors.grey[500],
+                size: 28,
+              ),
               onPressed: () {},
             ),
             Expanded(
@@ -439,7 +492,11 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.mic_none_outlined, color: Colors.grey[500], size: 28),
+              icon: Icon(
+                Icons.mic_none_outlined,
+                color: Colors.grey[500],
+                size: 28,
+              ),
               onPressed: () {},
             ),
           ],

@@ -22,7 +22,7 @@ class UserApi {
     final response = await http.get(
       Uri.parse('$baseUrl/users/my'),
       headers: {
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
 

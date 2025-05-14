@@ -26,7 +26,7 @@ class AuthApi {
 
   AuthApi._internal(this.baseUrl);
 
-  static AuthApi getInstance() {
+  static AuthApi get getInstance {
     if (_instance != null) return _instance!;
 
     _instance = AuthApi._internal(dotenv.env['API_URL']);

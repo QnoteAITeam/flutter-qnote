@@ -15,7 +15,7 @@ class ApiService {
 
   ApiService._internal(this.baseUrl, this._storage);
 
-  static ApiService getInstance() {
+  static ApiService get getInstance {
     if (_instance != null) return _instance!;
 
     _instance = ApiService._internal(
@@ -30,8 +30,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/sessions'),
       headers: {
-        'Authorization':
-            '${await AuthApi.getInstance().getAccessTokenHeader()}',
+        'Authorization': '${await AuthApi.getInstance.getAccessTokenHeader()}',
       },
     );
 
@@ -46,8 +45,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/sessions/recent?count=$count'),
       headers: {
-        'Authorization':
-            '${await AuthApi.getInstance().getAccessTokenHeader()}',
+        'Authorization': '${await AuthApi.getInstance.getAccessTokenHeader()}',
       },
     );
 
@@ -62,7 +60,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/sessions/latest'),
       headers: {
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
 
@@ -73,7 +71,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/sessions'),
       headers: {
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
 
@@ -84,7 +82,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/chat-messages/session/$sessionId'),
       headers: {
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
 
@@ -104,7 +102,7 @@ class ApiService {
         '$baseUrl/chat-messages/session/$sessionId/recent?count=$limit',
       ),
       headers: {
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
 
@@ -121,7 +119,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/chat-messages/my/recent-messages?limit=$limit'),
       headers: {
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
 
@@ -136,7 +134,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/chat-messages/my/messages'),
       headers: {
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
 
@@ -156,7 +154,7 @@ class ApiService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': (await AuthApi.getInstance().getAccessTokenHeader())!,
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
       body: jsonEncode({'message': message}),
     );
