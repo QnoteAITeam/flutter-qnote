@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_qnote/main.dart';
 import 'package:flutter_qnote/models/user.dart';
 import 'package:flutter_qnote/screens/authscreen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -142,6 +143,7 @@ class AuthApi {
     return true;
   }
 
+  //Do Not Use This Function.
   Future<void> beforeUseAccessToken(BuildContext context) async {
     if (baseUrl == null) {
       print('.env 파일이 진짜 있나요??? 확인해주세요.. 프로젝트 폴더 바로 .env 넣어주세요.');
@@ -152,6 +154,7 @@ class AuthApi {
     if (!isValid) await popLoginScreen(context);
   }
 
+  //Do Not Use This Function.
   Future<void> popLoginScreen(BuildContext context) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -160,5 +163,10 @@ class AuthApi {
         },
       ),
     );
+  }
+
+  Future<void> checkTokenAndRedirectIfNeeded() async {
+    final isValid = await isValidAccessToken();
+    if (!isValid) await navigatorKey.currentState?.pushNamed('/login');
   }
 }

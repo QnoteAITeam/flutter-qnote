@@ -1,16 +1,18 @@
+import 'package:flutter_qnote/models/chat_session.dart';
+
 class ChatMessage {
   final int id;
   final String role; // 'assistant' | 'system' | 'user'
   final String text;
   final DateTime createdAt;
-  final int sessionId;
+  final ChatSession? session;
 
   ChatMessage({
     required this.id,
     required this.role,
     required this.text,
     required this.createdAt,
-    required this.sessionId,
+    required this.session,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -19,7 +21,7 @@ class ChatMessage {
       role: json['role'],
       text: json['text'],
       createdAt: DateTime.parse(json['createdAt']),
-      sessionId: json['session']['id'], // session 객체 안의 id만 추출
+      session: ChatSession.fromJson(json['session']),
     );
   }
 
@@ -29,7 +31,7 @@ class ChatMessage {
       'role': role,
       'text': text,
       'createdAt': createdAt.toIso8601String(),
-      'session': {'id': sessionId},
+      'session': session?.toJson(),
     };
   }
 }

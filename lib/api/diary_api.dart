@@ -1,0 +1,120 @@
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_qnote/api/dto/update_diary_dto.dart';
+import 'package:flutter_qnote/auth/auth_api.dart';
+import 'package:flutter_qnote/models/diary.dart';
+import 'package:http/http.dart' as http;
+
+class DiaryApi {
+  final String baseUrl;
+  static DiaryApi? _instance;
+
+  DiaryApi._internal(this.baseUrl);
+
+  static DiaryApi get instance {
+    _instance ??= DiaryApi._internal(dotenv.env['API_URL']!);
+    return _instance!;
+  }
+
+  Future<Map<String, String>> _authHeader() async {
+    final token = await AuthApi.getInstance().getAccessTokenHeader();
+    return {'Authorization': token!, 'Content-Type': 'application/json'};
+  }
+
+  Future<Diary> createDiary(Diary dto) async {
+    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/diaries'),
+      headers: await _authHeader(),
+      body: jsonEncode(dto.toJson()),
+    );
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception('Failed to create diary: ${response.body}');
+    }
+
+    return Diary.fromJson(jsonDecode(response.body));
+  }
+
+  //한 페이지당 50개 단위로 줍니다.
+  Future<List<Diary>> getAllDiaries(int page) async {
+    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/diaries?page=$page'),
+      headers: await _authHeader(),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch diaries: ${response.body}');
+    }
+    final List<dynamic> list = jsonDecode(response.body);
+    return list.map((e) => Diary.fromJson(e)).toList();
+  }
+
+  //
+  Future<List<Diary>> getRecentDiaries(int count) async {
+    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/diaries/recent?count=$count'),
+      headers: await _authHeader(),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch recent diaries: ${response.body}');
+    }
+
+    final List<Map<String, dynamic>> list = jsonDecode(response.body);
+    return Diary.fromJsonList(list);
+  }
+
+  //가장 최근 다이어리 가져오기
+  Future<Diary> getMostRecentDiary() async {
+    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/diaries/recent/one'),
+      headers: await _authHeader(),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch most recent diary: ${response.body}');
+    }
+
+    return Diary.fromJson(jsonDecode(response.body));
+  }
+
+  Future<Diary> getDiaryById(int id) async {
+    AuthApi.getInstance().checkTokenAndRedirectIfNeeded();
+
+    final response = await http.get(Uri.parse('$baseUrl/diaries/$id'));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch diary: ${response.body}');
+    }
+    return Diary.fromJson(jsonDecode(response.body));
+  }
+
+  Future<Diary> updateDiary(int id, Diary diary) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/diaries/$id'),
+      headers: await _authHeader(),
+      body: jsonEncode(diary.toJson()),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update diary: ${response.body}');
+    }
+    return Diary.fromJson(jsonDecode(response.body));
+  }
+
+  Future<void> deleteDiary(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/diaries/$id'),
+      headers: await _authHeader(),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete diary: ${response.body}');
+    }
+  }
+}

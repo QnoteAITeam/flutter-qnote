@@ -22,4 +22,10 @@ class ChatSession {
       'createdAt': createdAt.toIso8601String(),
     };
   }
+
+  static List<ChatSession> fromJsonList(List<Map<String, dynamic>> list) {
+    return list
+        .map((chatSession) => ChatSession.fromJson(chatSession))
+        .toList();
+  }
 }

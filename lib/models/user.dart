@@ -1,3 +1,8 @@
+import 'package:flutter_qnote/models/chat_session.dart';
+import 'package:flutter_qnote/models/diary.dart';
+import 'package:flutter_qnote/models/emotion_tag.dart';
+import 'package:flutter_qnote/models/tag.dart';
+
 class User {
   final String id;
   final String username;
@@ -11,6 +16,10 @@ class User {
   final bool emailVerified;
   final int loginAttempts;
   final String provider;
+  final List<ChatSession> sessions;
+  final List<Diary> diaries;
+  final List<EmotionTag> emotionTags;
+  final List<Tag> tags;
 
   User({
     required this.id,
@@ -25,6 +34,10 @@ class User {
     required this.emailVerified,
     required this.loginAttempts,
     required this.provider,
+    this.sessions = const [],
+    this.diaries = const [],
+    this.emotionTags = const [],
+    this.tags = const [],
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -41,6 +54,10 @@ class User {
       emailVerified: json['emailVerified'],
       loginAttempts: json['loginAttempts'],
       provider: json['provider'],
+      sessions: ChatSession.fromJsonList(json['sessions'] ?? []),
+      diaries: Diary.fromJsonList(json['diaries'] ?? []),
+      emotionTags: EmotionTag.fromJsonList(json['emotionTags'] ?? []),
+      tags: Tag.fromJsonList(json['tags'] ?? []),
     );
   }
 
@@ -58,6 +75,11 @@ class User {
       'emailVerified': emailVerified,
       'loginAttempts': loginAttempts,
       'provider': provider,
+      'sessions': sessions.map((session) => session.toJson()).toList(),
+      'diaries': diaries.map((diary) => diary.toJson()).toList(),
+      'emotionTags':
+          emotionTags.map((emotionTag) => emotionTag.toJson()).toList(),
+      'tags': tags.map((tag) => tag.toJson()).toList(),
     };
   }
 }
