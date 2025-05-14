@@ -53,19 +53,20 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           Expanded(
-            child: _results.isEmpty
-                ? const Center(child: Text('검색 결과가 없습니다'))
-                : ListView.builder(
-              itemCount: _results.length,
-              itemBuilder: (context, index) {
-                final item = _results[index];
-                return ListTile(
-                  title: Text(item['title'] ?? '제목 없음'),
-                  subtitle: Text(item['content'] ?? '내용 없음'),
-                );
-              },
-            ),
-          )
+            child:
+                _results.isEmpty
+                    ? const Center(child: Text('검색 결과가 없습니다'))
+                    : ListView.builder(
+                      itemCount: _results.length,
+                      itemBuilder: (context, index) {
+                        final item = _results[index];
+                        return ListTile(
+                          title: Text(item['title'] ?? '제목 없음'),
+                          subtitle: Text(item['content'] ?? '내용 없음'),
+                        );
+                      },
+                    ),
+          ),
         ],
       ),
     );

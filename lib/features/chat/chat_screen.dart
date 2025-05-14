@@ -48,7 +48,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // 실제 앱에서는 여기서 await ApiService.createNewSession() 등을 호출하여
     // _chatSession을 설정하고, 필요한 초기 데이터를 로드할 수 있습니다.
     try {
-      // _chatSession = await ApiService.createNewSession(); // 실제 세션 생성 예시
+      await ApiService.getInstance.createNewSession(); // 실제 세션 생성 예시
       await Future.delayed(const Duration(seconds: 1)); // 세션 생성 시간 시뮬레이션
 
       if (mounted) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_qnote/features/login/login_screen.dart';
 import 'package:flutter_qnote/features/splash/splash_screen.dart';
-import 'package:flutter_qnote/screens/authscreen.dart';
 
 final colorScheme = ColorScheme.fromSeed(
   seedColor: const Color.fromARGB(255, 124, 124, 255),
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
 
       routes: {
         '/': (context) => const SplashScreen(),
-        '/login': (context) => const AuthScreen(),
+        '/login': (context) => const LoginScreen(),
       },
 
       title: 'Qnote',
