@@ -147,6 +147,7 @@ class ApiService {
 
   //chatGpt
   Future<SendMessageDto> sendMessageToAI(String message) async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     print('User가, AI에게 $message 전송하였습니다.');
     final url = Uri.parse('$baseUrl/openai/send-message');
 

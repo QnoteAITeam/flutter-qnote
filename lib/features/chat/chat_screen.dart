@@ -114,7 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // NOTE: 'data'만 전달해도 서버 측에서 SendMessageDto 형태로 응답을 반환함.
       //       반환된 aiResponseFromServer는 그대로 사용 가능.
-      final SendMessageDto aiResponseFromServer = await ApiService.getInstance
+      final SendMessageDto aiResponseFromServer = await ApiService.instance
           .sendMessageToAI(data); // 또는 userMessage 객체
 
       // 3. 서버로부터 받은 AI 응답(SendMessageDto)을 화면에 표시
@@ -153,7 +153,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // ApiService.sendMessageToAI 메소드가 SendMessageDto를 인자로 받거나,
       // 혹은 String을 인자로 받는 새로운 메소드가 필요할 수 있습니다.
       // 여기서는 data 대신 optionText를 사용한다고 가정합니다.
-      final SendMessageDto aiResponseFromServer = await ApiService.getInstance
+      final SendMessageDto aiResponseFromServer = await ApiService.instance
           .sendMessageToAI(optionText); // 또는 적절한 DTO를 만들어서 전달
 
       // (선택 사항) "AI가 입력 중..." 메시지 제거 (만약 추가했다면)

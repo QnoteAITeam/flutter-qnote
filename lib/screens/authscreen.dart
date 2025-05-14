@@ -42,6 +42,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     if (loginTry) {
+      print("여기서 사라지면 됩니다!!!!!!!!!!!!!!");
       Navigator.of(context).pop();
     }
   }
