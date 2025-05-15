@@ -1,3 +1,12 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val dotenv = Properties().apply {
+    val envFile = File(rootProject.projectDir.parentFile, ".env") // flutter_qnote/.env
+    println("🔍 Loading .env from: ${envFile.absolutePath}")
+    load(FileInputStream(envFile))
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,9 +15,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.figma_project"
+    namespace = dotenv["PAGE"] as String;
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -21,9 +31,11 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.figma_project"
+        applicationId = dotenv["PAGE"] as String
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        manifestPlaceholders.put("KAKAO_NATIVE_APP_KEY", dotenv["KAKAO_NATIVE_APP_KEY"] as String)
+        manifestPlaceholders.put("PAGE", dotenv["PAGE"] as String)
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

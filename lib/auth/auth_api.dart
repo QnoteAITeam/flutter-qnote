@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/main.dart';
 import 'package:flutter_qnote/models/user.dart';
 import 'package:flutter_qnote/screens/authscreen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk_talk.dart' as Kakao;
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk_template.dart';
 
 class Tokens {
   String? accessToken;
@@ -89,11 +92,86 @@ class AuthApi {
     return false;
   }
 
+  Future<User?> _loginFetchWithKakao(Kakao.OAuthToken token) async {
+    // TO DO : Backend에 토큰을 넣어 보내고, 유효성 검사 한뒤 토큰 발급받아 오기.
+  }
+
+  Future<Kakao.OAuthToken?> _loginWithKakaoSDK() async {
+    // 카카오톡 실행 가능 여부 확인
+    // 카카오톡 실행이 가능하면 카카오톡으로 로그인, 아니면 카카오계정으로 로그인
+    final bool result = await isKakaoTalkInstalled();
+    if (await isKakaoTalkInstalled()) {
+      print("카카오톡 있음");
+      try {
+        final Kakao.OAuthToken token =
+            await Kakao.UserApi.instance.loginWithKakaoTalk();
+
+        print('카카오톡으로 로그인 성공');
+        return token;
+      } catch (error) {
+        print('카카오톡으로 로그인 실패 $error');
+
+        // 사용자가 카카오톡 설치 후 디바이스 권한 요청 화면에서 로그인을 취소한 경우,
+        // 의도적인 로그인 취소로 보고 카카오계정으로 로그인 시도 없이 로그인 취소로 처리 (예: 뒤로 가기)
+        if (error is PlatformException && error.code == 'CANCELED') {
+          return null;
+        }
+        // 카카오톡에 연결된 카카오계정이 없는 경우, 카카오계정으로 로그인
+        try {
+          final token = await Kakao.UserApi.instance.loginWithKakaoAccount();
+          print('카카오계정으로 로그인 성공');
+          return token;
+        } catch (error) {
+          print('카카오계정으로 로그인 실패 $error');
+        }
+      }
+    } else {
+      print("카카오톡 없음");
+      try {
+        Kakao.OAuthToken token =
+            await Kakao.UserApi.instance.loginWithKakaoAccount();
+        print('카카오계정으로 로그인 성공');
+        return token;
+      } catch (error) {
+        print('카카오계정으로 로그인 실패 $error');
+      }
+    }
+
+    return null;
+  }
+
+  Future<User?> loginWithKakaoTalk() async {
+    final token = await _loginWithKakaoSDK();
+    if (token == null) return null;
+
+    print(token);
+
+    return _loginFetchWithKakao(token);
+  }
+
   Future<User> createAccount(String email, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/signup-local'),
       body: {'email': email, 'password': password},
     );
+
+    print('System : CreateAccount : result ${response.body}');
+    return User.fromJson(jsonDecode(response.body));
+  }
+
+  Future<User> createAccountWithName(
+    String email,
+    String password,
+    String username,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users'),
+      body: {'email': email, 'password': password, 'username': username},
+    );
+
+    if (response.statusCode == 409) {
+      throw new Exception(response.body);
+    }
 
     print('System : CreateAccount : result ${response.body}');
     return User.fromJson(jsonDecode(response.body));

@@ -1,4 +1,4 @@
-package com.example.figma_project
+package www.basiclab.qnote
 
 import io.flutter.embedding.android.FlutterActivity
 

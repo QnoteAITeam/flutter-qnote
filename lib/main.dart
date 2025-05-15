@@ -3,13 +3,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/features/login/login_screen.dart';
 import 'package:flutter_qnote/features/login/terms_agreement_screen.dart';
 import 'package:flutter_qnote/features/splash/splash_screen.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk_share.dart';
 
 final colorScheme = ColorScheme.fromSeed(
   seedColor: const Color.fromARGB(255, 124, 124, 255),
   surface: const Color.fromARGB(255, 160, 160, 255),
 );
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  KakaoSdk.init(nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY']);
   runApp(const MyApp());
 }
 

@@ -182,6 +182,21 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  SizedBox(
+                    width: _textWidth,
+                    child: Text('추가 보안 관련 조항', style: middleTextStyle),
+                  ),
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: _textWidth,
+                    child: Text(
+                      '본 서비스는 사용자 데이터 보호 및 서버 보안을 위해 다양한 기술적 조치를 적용하고 있습니다. 악의적인 접근, 해킹 시도, 트래픽 분석 등을 포함한 비정상적인 접속 시도는 관련 법률에 따라 민·형사상 책임을 물을 수 있습니다.',
+                      style: detailTextStyle,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   Container(
                     width: 316,
                     height: 46,
