@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_qnote/auth/auth_api.dart';
+import 'package:flutter_qnote/features/login/signup_screen.dart';
 import 'package:flutter_qnote/features/login/styles/sub_text_button_style.dart';
+import 'package:flutter_qnote/features/login/terms_agreement_screen.dart';
 import 'package:flutter_qnote/features/login/widgets/divider_with_text.dart';
 import 'package:flutter_qnote/features/login/widgets/login_button_text_widget.dart';
 import 'package:flutter_qnote/features/login/widgets/login_text_widget.dart';
@@ -31,7 +33,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   void _onPressedSignUp() {
-    //
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) {
+          return const TermsAgreementScreen();
+        },
+      ),
+    );
   }
 
   void _onPressedFindEmail() {
@@ -55,6 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onPressedSignIn() async {
     final isValid = _formKey.currentState!.validate();
     if (!isValid) return;
+
+    _formKey.currentState!.save();
 
     setState(() {
       _isLoggingIn = true;
@@ -180,7 +190,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 60),
 
                 //이메일로 로그인 위젯 컨테이너.
-                PressableFadeButton(signInCallBack: _onPressedSignIn),
+                PressableFadeButton(
+                  signInCallBack: _onPressedSignIn,
+                  text: '이메일로 로그인',
+                ),
 
                 const SizedBox(height: 30),
 

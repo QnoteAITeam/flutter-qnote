@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_qnote/features/login/widgets/login_button_text_widget.dart';
 
 class PressableFadeButton extends StatefulWidget {
-  const PressableFadeButton({super.key, required this.signInCallBack});
+  const PressableFadeButton({
+    super.key,
+    required this.signInCallBack,
+    required this.text,
+  });
 
   final VoidCallback signInCallBack;
+  final String text;
   @override
   State<PressableFadeButton> createState() => _PressableFadeButtonState();
 }
@@ -43,7 +48,7 @@ class _PressableFadeButtonState extends State<PressableFadeButton> {
                 borderRadius: BorderRadius.circular(25),
               ),
             ),
-            child: const Center(child: LoginButtonTextWidget()),
+            child: Center(child: LoginButtonTextWidget(text: widget.text)),
           ),
           AnimatedOpacity(
             opacity: _darkOverlayOpacity,

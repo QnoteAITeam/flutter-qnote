@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/features/login/login_screen.dart';
+import 'package:flutter_qnote/features/login/terms_agreement_screen.dart';
 import 'package:flutter_qnote/features/splash/splash_screen.dart';
 
 final colorScheme = ColorScheme.fromSeed(

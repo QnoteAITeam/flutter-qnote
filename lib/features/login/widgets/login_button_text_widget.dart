@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 class LoginButtonTextWidget extends StatelessWidget {
-  const LoginButtonTextWidget({super.key});
+  const LoginButtonTextWidget({super.key, required this.text});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      '이메일로 로그인',
+      text,
       style: TextStyle(
         color: Colors.white,
         fontSize: 15,
