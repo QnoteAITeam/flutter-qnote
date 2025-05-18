@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_qnote/api/dto/get_diary_info_dto.dart';
 import 'package:flutter_qnote/api/dto/send_message_dto.dart';
 import 'package:flutter_qnote/auth/auth_api.dart';
 import 'package:flutter_qnote/models/chat_message.dart';
 import 'package:flutter_qnote/models/chat_session.dart';
+import 'package:flutter_qnote/models/diary.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -167,6 +169,26 @@ class ApiService {
       return SendMessageDto.fromJsonByAssistant(jsonDecode(response.body));
     } else {
       throw Exception('Failed to send message: ${response.body}');
+    }
+  }
+
+  //파라미터로 다이어리의 내용을 주면 api서버에 호출 해서, 알아 내 옵니다.
+  Future<GetDiaryInfoDto> getDiaryInfoByContent(String content) async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/openai/summary'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
+      },
+      body: {'content': content},
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return GetDiaryInfoDto.fromJson(jsonDecode(response.body));
+    } else {
+      throw new Exception('Get Diary Info By Content, 요약을 가져오던 중 문제가 생겼습니다.');
     }
   }
 }
