@@ -4,6 +4,7 @@ import 'package:flutter_qnote/features/login/login_screen.dart';
 import 'package:flutter_qnote/features/login/terms_agreement_screen.dart';
 import 'package:flutter_qnote/features/splash/splash_screen.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk_share.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 final colorScheme = ColorScheme.fromSeed(
   seedColor: const Color.fromARGB(255, 124, 124, 255),
@@ -13,6 +14,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   KakaoSdk.init(nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY']);
+  await initializeDateFormatting('ko_KR', null);
   runApp(const MyApp());
 }
 
@@ -38,7 +40,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
 
-        fontFamily: 'SingleDay',
+        fontFamily: 'InterVariable',
 
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,

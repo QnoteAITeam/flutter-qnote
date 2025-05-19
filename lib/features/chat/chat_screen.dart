@@ -7,6 +7,7 @@ import 'package:flutter_qnote/api/dto/send_message_dto.dart';
 import 'package:flutter_qnote/auth/auth_api.dart';
 import 'package:flutter_qnote/features/diary/diary_detail_screen.dart';
 import 'package:flutter_qnote/models/chat_session.dart';
+import 'package:shimmer/shimmer.dart';
 
 enum InitialViewMode { full, aiMessageOnly, optionsOnly }
 
@@ -20,21 +21,20 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _textController = TextEditingController();
   bool _isCreatingSession = true;
+  bool _isAiResponding = false; // Shimmer: AI 응답 로딩 상태
   // late ChatSession _chatSession;
   final List<SendMessageDto> chatMessages = [];
 
   // AI 아바타 SVG 사용하도록 수정
   final Widget aiAvatar = CircleAvatar(
     backgroundColor: Colors.grey[300],
-    child: Icon(Icons.smart_toy_outlined, color: Colors.blue[700]), // 임시 아이콘
-    // backgroundImage: AssetImage('assets/images/ai_avatar.png'), // 실제 에셋 사용 시 주석 해제
+    backgroundImage: AssetImage('assets/images/ai_avatar.png'), // 실제 에셋 사용 시 주석 해제
   );
 
   // 메시지 옆 작은 아바타 SVG
   final Widget smallAiAvatar = CircleAvatar(
     backgroundColor: Colors.grey[300],
-    child: Icon(Icons.smart_toy_outlined, color: Colors.blue[700]), // 임시 아이콘
-    // backgroundImage: AssetImage('assets/images/ai_avatar.png'), // 실제 에셋 사용 시 주석 해제
+    backgroundImage: AssetImage('assets/images/ai_avatar.png'), // 실제 에셋 사용 시 주석 해제
   );
 
   @override
@@ -96,10 +96,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (data.trim().isEmpty) return;
 
     final userMessage = SendMessageDto.fromMessageByUser(data);
-
     if (mounted) {
       setState(() {
         chatMessages.add(userMessage);
+        _isAiResponding = true; // 응답 대기 시작
       });
     }
 
@@ -114,6 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // NOTE: 'data'만 전달해도 서버 측에서 SendMessageDto 형태로 응답을 반환함.
       //       반환된 aiResponseFromServer는 그대로 사용 가능.
+      await Future.delayed(const Duration(seconds: 2)); // 2초 대기 시뮬레이션
       final SendMessageDto aiResponseFromServer = await ApiService.getInstance
           .sendMessageToAI(data); // 또는 userMessage 객체
 
@@ -135,16 +136,25 @@ class _ChatScreenState extends State<ChatScreen> {
             message: "죄송합니다, AI와 대화 중 문제가 발생했습니다.",
           ),
         );
-        setState(() {}); // chatMessages 리스트 변경 후 UI 갱신
+        // _isAiResponding = false; // Shimmer: 오류 발생 시 로딩 종료
+      }
+    }
+    finally { // finally 블록 추가
+      if (mounted) {
+        setState(() {
+          _isAiResponding = false; // 성공하든 실패하든 로딩 상태 해제
+        });
       }
     }
   }
+
 
   void _onOptionTapped(String optionText) async {
     final userMessage = SendMessageDto.fromMessageByUser(optionText);
     if (mounted) {
       setState(() {
         chatMessages.add(userMessage);
+        _isAiResponding = true; // Shimmer: AI 응답 대기 시작
       });
     }
 
@@ -153,6 +163,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // ApiService.sendMessageToAI 메소드가 SendMessageDto를 인자로 받거나,
       // 혹은 String을 인자로 받는 새로운 메소드가 필요할 수 있습니다.
       // 여기서는 data 대신 optionText를 사용한다고 가정합니다.
+      await Future.delayed(const Duration(seconds: 2));
       final SendMessageDto aiResponseFromServer = await ApiService.getInstance
           .sendMessageToAI(optionText); // 또는 적절한 DTO를 만들어서 전달
 
@@ -187,6 +198,14 @@ class _ChatScreenState extends State<ChatScreen> {
               message: errorMessage,
             ),
           );
+          // _isAiResponding = false; // Shimmer: 오류 발생 시 로딩 종료
+        });
+      }
+    }
+    finally { // finally 블록 추가
+      if (mounted) {
+        setState(() {
+          _isAiResponding = false; // 성공하든 실패하든 로딩 상태 해제
         });
       }
     }
@@ -244,25 +263,28 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16.0),
-                      itemCount: chatMessages.length,
+                      itemCount: chatMessages.length + (_isAiResponding ? 1 : 0),
                       itemBuilder: (context, index) {
-                        final msg = chatMessages[index];
-                        bool isAiMessage = msg.role == MessageRole.assistance;
+                        if (index == chatMessages.length && _isAiResponding) {
+                          // Shimmer: AI 응답을 기다리는 중이면 Shimmer 효과 표시
+                          return _buildShimmerLoadingBubble();
+                        }
 
-                        bool isInitialForAvatar =
-                            isAiMessage &&
-                            chatMessages
-                                    .where(
-                                      (m) => m.role == MessageRole.assistance,
-                                    )
-                                    .toList()
-                                    .indexOf(msg) ==
-                                0;
+                        final msg = chatMessages[index];
+                        bool isAiMsg = msg.role == MessageRole.assistance;
+                        // bool isInitialForAvatarLogic =
+                            // isAiMessage &&
+                            // chatMessages
+                                    // .where(
+                                      // (m) => m.role == MessageRole.assistance,
+                                    // )
+                                    // .toList()
+                                    // .indexOf(msg) ==
+                                // 0;
                         return _buildChatMessageBubble(
                           msg.message ?? "...",
-                          DateTime.now(), // 임시 타임스탬프 (UI 모델 사용 권장)
-                          isAiMessage,
-                          isInitialMessage: isInitialForAvatar,
+                          DateTime.now(), // 실제로는 msg.timestamp 또는 createdAt 사용
+                          isAiMsg, // isInitialMessage: isInitialForAvatarLogic, // 필요에 따라 이 플래그 사용 여부 결정
                         );
                       },
                     ),
@@ -277,6 +299,41 @@ class _ChatScreenState extends State<ChatScreen> {
                   _buildInputArea(),
                 ],
               ),
+    );
+  }
+
+  // Shimmer 효과가 적용된 메시지 버블 플레이스홀더
+  Widget _buildShimmerLoadingBubble() {
+    return Align(
+      alignment: Alignment.centerLeft, // AI 응답 위치에 표시
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipOval(child: smallAiAvatar), // Shimmer에서도 아바타 표시
+            const SizedBox(width: 8),
+            Container(
+                margin: const EdgeInsets.symmetric(vertical: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white, // Shimmer의 child는 실제 색상이 아니라 모양만 제공
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column( // 여러 줄 텍스트를 흉내
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(width: 120, height: 10.0, color: Colors.white),
+                    const SizedBox(height: 4),
+                    Container(width: 80, height: 10.0, color: Colors.white),
+                  ],
+                )
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -343,38 +400,22 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildChatMessageBubble(
-    String message,
-    DateTime timestamp,
-    bool isAiMessage, {
-    bool isInitialMessage = false,
-  }) {
-    final align = isAiMessage ? Alignment.centerLeft : Alignment.centerRight;
-    final bubbleColor =
-        isAiMessage ? Colors.grey[200] : const Color(0xFF4A86F7);
-    final textColor = isAiMessage ? Colors.black87 : Colors.white;
-    final radius =
-        isAiMessage
-            ? const BorderRadius.only(
-              topRight: Radius.circular(20),
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            )
-            : const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              bottomLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            );
+      String message,
+      DateTime timestamp, // timestamp는 현재 사용되지 않지만, SendMessageDto에 추가되면 활용 가능
+      bool isAiMessage, // SendMessageDto.role을 기반으로 전달
+          {bool isInitialMessage = false /* 이 파라미터는 이제 크게 중요하지 않을 수 있음 */}
+      ) {
+    final bool isUserMessage = !isAiMessage; // AI 메시지가 아니면 사용자 메시지
 
     return Align(
-      alignment: align,
+      alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start, // 아바타와 말풍선 상단 정렬
         children: [
-          if (isAiMessage && isInitialMessage) ...[
-            // 메시지 옆 작은 AI 아바타 (SVG)
-            ClipOval(child: smallAiAvatar), // SVG가 사각형일 경우 원형으로 자름
-            // smallAiAvatar, // SVG가 이미 원형 디자인이라면 ClipOval 없이 사용
+          // AI 메시지일 경우 항상 (작은) 아바타 표시
+          if (isAiMessage) ...[
+            ClipOval(child: smallAiAvatar), // 여기서 smallAiAvatar 사용
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -382,29 +423,17 @@ class _ChatScreenState extends State<ChatScreen> {
               margin: const EdgeInsets.symmetric(vertical: 4.0),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: bubbleColor,
-                borderRadius: radius,
+                color: isUserMessage
+                    ? Theme.of(context).primaryColor.withOpacity(0.8) // 사용자 메시지 색상
+                    : (message.startsWith("죄송합니다") // 시스템 오류 메시지 구분 (선택적)
+                    ? Colors.red[100]
+                    : Colors.grey[200]), // AI 또는 일반 시스템 메시지 색상
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                crossAxisAlignment:
-                    isAiMessage
-                        ? CrossAxisAlignment.start
-                        : CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    message,
-                    style: TextStyle(fontSize: 15, color: textColor),
-                  ),
-                  if (isAiMessage)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(
-                        "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}",
-                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                      ),
-                    ),
-                ],
+              child: Text(
+                message,
+                style: TextStyle(
+                    color: isUserMessage ? Colors.white : Colors.black87),
               ),
             ),
           ),

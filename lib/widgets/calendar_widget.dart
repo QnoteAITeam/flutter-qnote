@@ -1,147 +1,197 @@
 // lib/widgets/calendar_widget.dart
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart'; // DateFormat 사용
+
+// DateTapDetails 클래스는 이전과 동일하게 유지
+class DateTapDetails {
+  final DateTime date;
+  final bool hasEvent;
+
+  DateTapDetails({
+    required this.date,
+    required this.hasEvent,
+  });
+}
+
+typedef OnDateTapWithDetails = void Function(DateTapDetails details);
 
 class CalendarWidget extends StatefulWidget {
-  final ValueChanged<int>? onFlameCountChanged;
-  const CalendarWidget({Key? key, this.onFlameCountChanged}) : super(key: key);
+  final DateTime focusedDayForCalendar;
+  final DateTime today;
+  final Set<DateTime> daysWithDiary;
+  final OnDateTapWithDetails? onDateTap;
+  final ValueChanged<DateTime>? onPageChanged;
+
+  const CalendarWidget({
+    Key? key,
+    required this.focusedDayForCalendar,
+    required this.today,
+    this.daysWithDiary = const {},
+    this.onDateTap,
+    this.onPageChanged,
+  }) : super(key: key);
 
   @override
   _CalendarWidgetState createState() => _CalendarWidgetState();
 }
 
 class _CalendarWidgetState extends State<CalendarWidget> {
-  DateTime _focusedDate = DateTime(2025, 1, 1);
-  final Set<int> _flameDays = {};
-  final Map<String, Set<int>> _savedFlames = {};
-  static const List<String> _monthNames = [
-    '1월','2월','3월','4월','5월','6월',
-    '7월','8월','9월','10월','11월','12월'
-  ];
+  late DateTime _focusedDayInternal;
+  final List<String> _koreanWeekdays = ["월", "화", "수", "목", "금", "토", "일"]; // 요일 표시용
 
-  void _toggleDay(int day) {
-    setState(() {
-      if (!_flameDays.remove(day)) {
-        _flameDays.add(day);
-      }
-
-      widget.onFlameCountChanged?.call(_flameDays.length);
-    });
+  @override
+  void initState() {
+    super.initState();
+    _focusedDayInternal = widget.focusedDayForCalendar;
   }
 
-  void _prevMonth() {
-    setState(() {
-
-      final key = '${_focusedDate.year}-${_focusedDate.month}';
-      _savedFlames[key] = Set.from(_flameDays);
-
-      final year = _focusedDate.month == 1
-          ? _focusedDate.year - 1
-          : _focusedDate.year;
-      final month = _focusedDate.month == 1
-          ? 12
-          : _focusedDate.month - 1;
-      _focusedDate = DateTime(year, month, 1);
-
-      final newKey = '${_focusedDate.year}-${_focusedDate.month}';
-      _flameDays
-        ..clear()
-        ..addAll(_savedFlames[newKey] ?? {});
-    });
+  @override
+  void didUpdateWidget(covariant CalendarWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!isSameDay(widget.focusedDayForCalendar, _focusedDayInternal)) {
+      _focusedDayInternal = widget.focusedDayForCalendar;
+    }
   }
 
-  void _nextMonth() {
-    setState(() {
-      final key = '${_focusedDate.year}-${_focusedDate.month}';
-      _savedFlames[key] = Set.from(_flameDays);
-
-      final year = _focusedDate.month == 12
-          ? _focusedDate.year + 1
-          : _focusedDate.year;
-      final month = _focusedDate.month == 12
-          ? 1
-          : _focusedDate.month + 1;
-      _focusedDate = DateTime(year, month, 1);
-
-      final newKey = '${_focusedDate.year}-${_focusedDate.month}';
-      _flameDays
-        ..clear()
-        ..addAll(_savedFlames[newKey] ?? {});
-    });
+  bool _isEnabledDay(DateTime day) {
+    DateTime normalizedToday = DateTime.utc(widget.today.year, widget.today.month, widget.today.day);
+    DateTime normalizedDay = DateTime.utc(day.year, day.month, day.day);
+    return !normalizedDay.isAfter(normalizedToday);
   }
+
   @override
   Widget build(BuildContext context) {
-    final daysInMonth = DateTime(
-      _focusedDate.year, _focusedDate.month + 1, 0,
-    ).day;
-    final offset = _focusedDate.weekday - 1;
-    final totalCells = offset + daysInMonth;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black12.withAlpha((0.05 * 255).round()), blurRadius: 10, spreadRadius: 2)],
       ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(icon: const Icon(Icons.chevron_left), onPressed: _prevMonth),
-              Text(
-                '${_monthNames[_focusedDate.month - 1]} ${_focusedDate.year}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              IconButton(icon: const Icon(Icons.chevron_right), onPressed: _nextMonth),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: const [
-              Text('MON', style: TextStyle(color: Colors.grey)),
-              Text('TUE', style: TextStyle(color: Colors.grey)),
-              Text('WED', style: TextStyle(color: Colors.grey)),
-              Text('THU', style: TextStyle(color: Colors.grey)),
-              Text('FRI', style: TextStyle(color: Colors.grey)),
-              Text('SAT', style: TextStyle(color: Colors.grey)),
-              Text('SUN', style: TextStyle(color: Colors.grey)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          GridView.builder(
-            key: ValueKey('${_focusedDate.year}-${_focusedDate.month}'),
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7, mainAxisSpacing: 8, crossAxisSpacing: 8),
-            itemCount: totalCells,
-            itemBuilder: (context, idx) {
-              if (idx < offset) return const SizedBox();
-              final day = idx - offset + 1;
-              final isFlame = _flameDays.contains(day);
-              return GestureDetector(
-                onTap: () => _toggleDay(day),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isFlame
-                        ? Colors.blue.withOpacity(0.2)
-                        : Colors.grey.withOpacity(0.2),
-                  ),
-                  child: Center(
-                    child: isFlame
-                        ? const Icon(Icons.local_fire_department,
-                        color: Colors.orange, size: 20)
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      child: TableCalendar<dynamic>(
+        locale: 'ko_KR',
+        firstDay: DateTime.utc(2010, 1, 1),
+        lastDay: DateTime.utc(2030, 12, 31),
+        focusedDay: _focusedDayInternal,
+        calendarFormat: CalendarFormat.month,
+        calendarStyle: const CalendarStyle(
+          outsideDaysVisible: true, // 이전/다음 달 날짜 셀을 빌더가 처리하도록
+        ),
+        headerStyle: HeaderStyle(
+          titleCentered: true,
+          formatButtonVisible: false,
+          titleTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87),
+          leftChevronIcon: const Icon(Icons.chevron_left, color: Colors.grey),
+          rightChevronIcon: const Icon(Icons.chevron_right, color: Colors.grey),
+          titleTextFormatter: (date, locale) => DateFormat.yMMMM(locale).format(date),
+        ),
+        daysOfWeekHeight: 30, // 요일 표시 영역 높이 (선택적)
+        calendarBuilders: CalendarBuilders(
+          dowBuilder: (context, day) { // 요일 빌더 수정
+            final text = _koreanWeekdays[day.weekday -1]; // DateTime.monday는 1
+            TextStyle? style;
+            if (day.weekday == DateTime.saturday) { // 토요일
+              style = TextStyle(color: Colors.blue[700], fontSize: 12, fontWeight: FontWeight.w500);
+            } else if (day.weekday == DateTime.sunday) { // 일요일
+              style = TextStyle(color: Colors.red[600], fontSize: 12, fontWeight: FontWeight.w500);
+            } else { // 평일
+              style = TextStyle(color: Colors.grey[700], fontSize: 12, fontWeight: FontWeight.w500);
+            }
+            return Center(
+              child: Text(text, style: style),
+            );
+          },
+          todayBuilder: (context, day, focusedDay) {
+            final dayUtc = DateTime.utc(day.year, day.month, day.day);
+            final bool isFlameDay = widget.daysWithDiary.contains(dayUtc);
+            return _buildCell(context, day, isFlameDay, true, true);
+          },
+          defaultBuilder: (context, day, focusedDay) {
+            final bool isEnabled = _isEnabledDay(day);
+            return _buildCell(context, day, false, false, isEnabled);
+          },
+          disabledBuilder: (context, day, focusedDay) {
+            return _buildCell(context, day, false, false, false);
+          },
+          outsideBuilder: (context, day, focusedDay) {
+            return _buildCell(context, day, false, false, false, isOutside: true);
+          },
+        ),
+        enabledDayPredicate: _isEnabledDay,
+        onDaySelected: (selectedDay, focusedDay) {
+          if (!isSameDay(_focusedDayInternal, focusedDay)) {
+            setState(() {
+              _focusedDayInternal = focusedDay;
+            });
+          }
+          _handleDayCellTap(selectedDay);
+        },
+        onPageChanged: (focusedDay) {
+          setState(() {
+            _focusedDayInternal = focusedDay;
+          });
+          widget.onPageChanged?.call(focusedDay);
+        },
       ),
     );
+  }
+
+  Widget _buildCell(BuildContext context, DateTime day, bool isFlameForToday, bool isToday, bool isEnabled, {bool isOutside = false}) {
+    BoxDecoration cellDecoration = BoxDecoration(
+      shape: BoxShape.circle,
+      color: Colors.transparent,
+    );
+    Widget cellChild = const SizedBox.shrink();
+
+    if (isOutside) {
+      cellDecoration = BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey.withAlpha((0.10 * 255).round()),
+      );
+    } else if (isEnabled) {
+      if (isToday) {
+        if (isFlameForToday) {
+          cellChild = const Icon(Icons.local_fire_department, color: Colors.deepOrangeAccent, size: 20);
+          cellDecoration = BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.orange.withAlpha((0.10 * 255).round()),
+            border: Border.all(color: Colors.amber.shade600, width: 1.5),
+          );
+        } else {
+          cellDecoration = BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.grey.withAlpha((0.15 * 255).round()),
+            border: Border.all(color: Colors.amber.shade600, width: 1.5),
+          );
+        }
+      } else { // 과거 (오늘 아님)
+        cellDecoration = BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.grey.withAlpha((0.15 * 255).round()),
+        );
+      }
+    } else { // 미래 날짜
+      cellDecoration = BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey.withAlpha((0.15 * 255).round()),
+      );
+    }
+    return Container(
+      margin: const EdgeInsets.all(5.0),
+      decoration: cellDecoration,
+      child: Center(child: cellChild),
+    );
+  }
+
+  void _handleDayCellTap(DateTime tappedDay) {
+    final bool hasEvent = widget.daysWithDiary.contains(
+        DateTime.utc(tappedDay.year, tappedDay.month, tappedDay.day));
+    widget.onDateTap?.call(DateTapDetails(date: tappedDay, hasEvent: hasEvent));
+  }
+
+  bool isSameDay(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }
