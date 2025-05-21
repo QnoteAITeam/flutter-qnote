@@ -1,9 +1,10 @@
 // lib/features/chat/chat_screen.dart
 import 'dart:async';
-import 'dart:convert'; // SendMessageDto 내부에서 JSON 파싱에 사용될 수 있음
+// import 'dart:convert'; // 현재 직접 사용 안 함
+
 import 'package:flutter/material.dart';
 import 'package:flutter_qnote/api/api_service.dart';
-import 'package:flutter_qnote/api/dto/send_message_dto.dart'; // SendMessageDto 경로 확인
+import 'package:flutter_qnote/api/dto/send_message_dto.dart';
 import 'package:flutter_qnote/features/diary/diary_detail_screen.dart';
 import 'package:flutter_qnote/models/diary.dart';
 import 'package:shimmer/shimmer.dart';
@@ -53,7 +54,7 @@ class _ChatScreenState extends State<ChatScreen> {
             role: MessageRole.assistance,
             state: MessageState.asking,
             message: '안녕하세요! 오늘 하루는 어떠셨나요? 😊',
-            askingNumericValue: 1, // 초기 질문이므로 asking 1 (또는 서버 스펙에 맞게)
+            askingNumericValue: 1,
           ),
         );
         setStateIfMounted(() {
@@ -74,7 +75,7 @@ class _ChatScreenState extends State<ChatScreen> {
         }
         chatMessages.add(
           SendMessageDto(
-            role: MessageRole.system,
+            role: MessageRole.system, // 세션 시작 오류는 일반 시스템 메시지 유지
             state: MessageState.done,
             message: errorMessage,
           ),
@@ -141,7 +142,6 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!_showAskingZeroDiaryButton &&
               aiResponseFromServer.askingNumericValue != null &&
               aiResponseFromServer.askingNumericValue != 0) {
-            // 서버에서 choices 필드를 받아와서 동적으로 옵션 구성하는 것이 이상적
             _currentChatOptions = [
               '네, 다음 질문해주세요.',
               '아니요, 더 할 말 없어요.',
@@ -160,9 +160,10 @@ class _ChatScreenState extends State<ChatScreen> {
         if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
           errorMessage = "세션이 만료되었거나 인증 오류가 발생했습니다.";
         }
+        // *** UI 변경 요청 반영: AI 대화 중 오류 메시지를 AI 응답 스타일로 변경 ***
         chatMessages.add(
           SendMessageDto(
-            role: MessageRole.system,
+            role: MessageRole.assistance, // AI 응답 역할로 변경
             state: MessageState.done,
             message: errorMessage,
           ),
@@ -185,7 +186,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _processAiResponseAndUpdateButtonState(SendMessageDto aiMessageFromServer) {
-    // --- 로그 추가 위치 1 ---
     print("ChatScreen: Processing AI response. askingNumericValue: ${aiMessageFromServer.askingNumericValue}, message: <<<${aiMessageFromServer.message}>>>");
 
     if (aiMessageFromServer.role != MessageRole.assistance) {
@@ -199,9 +199,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (aiMessageFromServer.askingNumericValue == 0) {
       String messageContent = aiMessageFromServer.message;
-      List<String> extractedTags = []; // 추출된 태그를 저장할 리스트
+      List<String> extractedTags = [];
       try {
-        // 1. 기존 #태그 추출 시도
         RegExp exp = RegExp(r"#([\wㄱ-ㅎㅏ-ㅣ가-힣]+)");
         Iterable<Match> matches = exp.allMatches(messageContent);
         extractedTags = matches.map((m) {
@@ -212,33 +211,20 @@ class _ChatScreenState extends State<ChatScreen> {
           return null;
         }).where((tag) => tag != null && tag.isNotEmpty).cast<String>().toList();
 
-        // 2. 만약 #태그가 없다면, 내용 기반으로 간단한 자동 태그 생성 시도
         if (extractedTags.isEmpty && messageContent.isNotEmpty) {
           print("ChatScreen: No #tags found in AI message, trying to auto-generate tags from content.");
-          // 매우 간단한 예시: 특정 키워드 포함 여부로 태그 생성
           List<String> keywordCandidates = [];
-          // 자주 사용될 만한 긍정/부정/일상 관련 키워드 추가 (더 많은 키워드 및 정교한 로직 필요)
           if (messageContent.contains("행복") || messageContent.contains("즐거") || messageContent.contains("기뻤")) keywordCandidates.add("행복");
           if (messageContent.contains("감사") || messageContent.contains("고마")) keywordCandidates.add("감사");
           if (messageContent.contains("슬픔") || messageContent.contains("우울") || messageContent.contains("힘들")) keywordCandidates.add("슬픔");
-          if (messageContent.contains("화남") || messageContent.contains("짜증")) keywordCandidates.add("화남");
-          if (messageContent.contains("일상") || messageContent.contains("평범") || messageContent.contains("보통")) keywordCandidates.add("일상");
           if (messageContent.contains("샐러드")) keywordCandidates.add("샐러드");
           if (messageContent.contains("아침")) keywordCandidates.add("아침식사");
-          if (messageContent.contains("운동")) keywordCandidates.add("운동");
-          if (messageContent.contains("공부")) keywordCandidates.add("공부");
-          if (messageContent.contains("친구")) keywordCandidates.add("친구");
-          if (messageContent.contains("가족")) keywordCandidates.add("가족");
-
-          // 중복을 제거하고 최대 3개의 키워드 태그만 사용
           extractedTags.addAll(keywordCandidates.toSet().take(3));
-
-          // 그래도 태그가 없다면, 메시지에서 길이가 2 이상인 단어 중 처음 2개 (매우 단순)
           if (extractedTags.isEmpty) {
             List<String> words = messageContent
-                .replaceAll(RegExp(r'[^\w\sㄱ-ㅎㅏ-ㅣ가-힣]'), '') // 간단한 특수문자 제거
+                .replaceAll(RegExp(r'[^\w\sㄱ-ㅎㅏ-ㅣ가-힣]'), '')
                 .split(RegExp(r'\s+'))
-                .where((word) => word.length > 1 && !_isCommonWord(word)) // 흔한 단어 제외
+                .where((word) => word.length > 1 && !_isCommonWord(word))
                 .toList();
             if (words.isNotEmpty) {
               extractedTags = words.take(2).toList();
@@ -246,17 +232,14 @@ class _ChatScreenState extends State<ChatScreen> {
           }
           print("ChatScreen: Auto-generated tags: $extractedTags");
         }
-
       } catch (e) {
         print("ChatScreen: Error extracting/generating tags: $e");
       }
-
       setStateIfMounted(() {
         _diarySummaryForButton = messageContent;
         _diaryTitleForButton = '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
-        _diaryTagsForButton = extractedTags.toSet().toList(); // 최종적으로 중복 제거
+        _diaryTagsForButton = extractedTags.toSet().toList();
         _showAskingZeroDiaryButton = true;
-        // --- 로그 추가 위치 2 ---
         print("ChatScreen: 일기 작성/수정하기 버튼 표시 (askingNumericValue == 0). Final Tags: $_diaryTagsForButton");
       });
     } else {
@@ -264,15 +247,13 @@ class _ChatScreenState extends State<ChatScreen> {
         _showAskingZeroDiaryButton = false;
         _diarySummaryForButton = null;
         _diaryTagsForButton = [];
-        // --- 로그 추가 위치 3 ---
         print("ChatScreen: 일기 작성/수정하기 버튼 숨김 (askingNumericValue = ${aiMessageFromServer.askingNumericValue})");
       });
     }
   }
 
-  // 흔한 단어 제외를 위한 간단한 헬퍼 함수 (필요시 확장)
   bool _isCommonWord(String word) {
-    const commonWords = ['오늘', '어제', '내일', '나는', '나의', '내가', '너는', '너의', '그는', '그녀는', '우리', '그리고', '그래서', '하지만', '그러나', '이제', '정말', '매우', '아주', '너무', '조금', '많이', '항상', '가끔', '때때로', '여기', '저기', '이것', '저것', '그것', '있다', '없다', '했다', '이다', '입니다'];
+    const commonWords = ['오늘', '어제', '내일', '나는', '나의', '내가', '너는', '너의', '그는', '그녀는', '우리', '그리고', '그래서', '하지만', '그러나', '이제', '정말', '매우', '아주', '너무', '조금', '많이', '항상', '가끔', '때때로', '여기', '저기', '이것', '저것', '그것', '있다', '없다', '했다', '이다', '입니다', '같아요', '했어요', '있어요', '없어요'];
     return commonWords.contains(word.toLowerCase());
   }
 
@@ -295,10 +276,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void _navigateToDiaryDetailScreen() async {
     if (!_showAskingZeroDiaryButton || _diarySummaryForButton == null || !mounted) return;
 
-    // --- 로그 추가 위치 4 ---
     print("ChatScreen: Navigating to DiaryDetailScreen with tags: $_diaryTagsForButton, title: $_diaryTitleForButton, summary: $_diarySummaryForButton");
 
-    final result = await Navigator.push<Diary>(
+    final Diary? result = await Navigator.push<Diary>(
       context,
       MaterialPageRoute(
         builder: (context) => DiaryDetailScreen(
@@ -306,12 +286,32 @@ class _ChatScreenState extends State<ChatScreen> {
           initialContent: _diarySummaryForButton!,
           initialSummaryFromAI: _diarySummaryForButton,
           initialTags: _diaryTagsForButton,
-          initialDate: DateTime.now(), // 현재 날짜 전달
+          initialDate: DateTime.now(),
         ),
       ),
     );
-    if (result != null && mounted) {
-      Navigator.pop(context, result);
+
+    if (!mounted) return;
+
+    if (result != null) {
+      print("ChatScreen: Returned from DiaryDetailScreen with Diary ID: ${result.id}");
+      setStateIfMounted(() {
+        _showAskingZeroDiaryButton = false;
+        _diarySummaryForButton = null;
+        _diaryTagsForButton = [];
+        _currentChatOptions = [];
+        chatMessages.add(SendMessageDto(
+          role: MessageRole.assistance, // AI 응답 스타일로 변경
+          state: MessageState.done,
+          message: "AI가 요약하여 일기를 저장했습니다. (ID: ${result.id})",
+        ));
+      });
+      _scrollToBottom();
+    } else {
+      print("ChatScreen: Returned from DiaryDetailScreen without saving a diary (result is null).");
+      setStateIfMounted(() {
+        _showAskingZeroDiaryButton = false;
+      });
     }
   }
 
@@ -362,7 +362,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       body: _isCreatingSession
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(key: ValueKey("chat_session_loading")))
           : Column(
         children: [
           Expanded(
@@ -375,7 +375,6 @@ class _ChatScreenState extends State<ChatScreen> {
               itemBuilder: (context, index) {
                 int messageBoundary = chatMessages.length;
                 int buttonIndexCandidate = messageBoundary + (_isAiResponding ? 1 : 0);
-
                 if (_isAiResponding && index == messageBoundary) {
                   return _buildShimmerLoadingBubble();
                 }
@@ -432,6 +431,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildChatMessageBubble(SendMessageDto messageDto) {
     final bool isUserMessage = messageDto.role == MessageRole.user;
+    final bool isAssistanceMessage = messageDto.role == MessageRole.assistance;
     final bool isSystemMessage = messageDto.role == MessageRole.system;
 
     return Align(
@@ -440,7 +440,7 @@ class _ChatScreenState extends State<ChatScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isUserMessage && !isSystemMessage) ...[
+          if (isAssistanceMessage) ...[
             ClipOval(child: smallAiAvatar),
             const SizedBox(width: 8),
           ],
@@ -451,9 +451,11 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: BoxDecoration(
                 color: isUserMessage
                     ? const Color(0xFFB59A7B)
+                    : (isAssistanceMessage
+                    ? Colors.grey[200] // AI 메시지 배경색
                     : (isSystemMessage
-                    ? Colors.redAccent.withOpacity(0.1)
-                    : Colors.grey[200]),
+                    ? Colors.amber.shade100 // 일반 시스템 메시지 배경색
+                    : Colors.grey[200])), // 기본값
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -466,7 +468,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: TextStyle(
                     color: isUserMessage
                         ? Colors.white
-                        : (isSystemMessage ? Colors.red.shade800 : Colors.black87)),
+                        : (isAssistanceMessage
+                        ? Colors.black87 // AI 메시지 텍스트 색상
+                        : (isSystemMessage
+                        ? Colors.orange.shade800 // 일반 시스템 메시지 텍스트 색상
+                        : Colors.black87))),
               ),
             ),
           ),

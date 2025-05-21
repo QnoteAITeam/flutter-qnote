@@ -49,3 +49,7 @@ flutter:
     - family: InterVariable
       fonts:
         - asset: assets/fonts/InterVariable.ttf
+
+  # 만약 intl 버전 충돌 발생 시 (table_calendar 등이 intl 0.18.x 요구 시)
+dependency_overrides:
+  intl: ^0.19.0
