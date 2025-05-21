@@ -1,4 +1,6 @@
 //이 메세지는 누가 작성하였나.. system은 우리 서버측, assistance는.. AI, user는 유저
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -52,7 +54,7 @@ class SendMessageDto {
     return SendMessageDto(
       role: MessageRole.assistance,
       state: json['asking'] == 1 ? MessageState.asking : MessageState.done,
-      message: json['message'],
+      message: jsonDecode(json['message'])['message'],
     );
   }
 

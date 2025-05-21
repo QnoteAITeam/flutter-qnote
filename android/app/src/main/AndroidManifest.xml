@@ -1,4 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package-visibility='${PAGE}'>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package-visibility='${PAGE}'
+    package='${PAGE}'>
     <application
         android:label="figma_project"
         android:name="${applicationName}"

@@ -164,7 +164,7 @@ class ApiService {
 
     if (response.statusCode == 201) {
       // return SendMessageRequestDto.fromJson(jsonDecode(response.body));
-
+      print(response.body);
       //임시 dummy 값입니다.
       return SendMessageDto.fromJsonByAssistant(jsonDecode(response.body));
     } else {
