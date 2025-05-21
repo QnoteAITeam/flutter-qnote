@@ -132,6 +132,7 @@ class DiaryApi {
 
   Future<void> deleteDiary(int id) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.delete(
       Uri.parse('$baseUrl/diaries/$id'),
       headers: await _authHeader(),
@@ -139,5 +140,25 @@ class DiaryApi {
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Failed to delete diary: ${response.body}');
     }
+  }
+
+  //   export interface PredictDto {
+  //   predicts: string[];
+  // }
+
+  // 가장 마지막 세션에서의 유저의 예측된 대답을 리턴합니다.
+  Future<List<String>> getUserPredictedAnswerMostSession() async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/openai/predict/recent'),
+      headers: await _authHeader(),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to get PredictedAnswer: ${response.body}');
+    }
+
+    return jsonDecode(response.body)['predicts'];
   }
 }
