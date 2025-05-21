@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/api/dto/update_diary_dto.dart';
 import 'package:flutter_qnote/auth/auth_api.dart';
 import 'package:flutter_qnote/models/diary.dart';
+import 'package:flutter_qnote/models/emotion_tag.dart';
 import 'package:http/http.dart' as http;
 
 class DiaryApi {
@@ -21,13 +22,26 @@ class DiaryApi {
     return {'Authorization': token!, 'Content-Type': 'application/json'};
   }
 
+  // 실제 쿼리 어떻게 받는지 모습.
+  //   export class CreateDiaryDto {
+  //   title: string;
+  //   content: string;
+  //   tags: string[]; // tag names
+  //   emotionTags: string[]; // emotion tag names
+  // }
+
   Future<Diary> createDiary(Diary dto) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.post(
       Uri.parse('$baseUrl/diaries'),
       headers: await _authHeader(),
-      body: jsonEncode(dto.toJson()),
+      body: {
+        'title': dto.title,
+        'content': dto.content,
+        'tags': dto.tags.map((e) => e.name).toList(),
+        'emotionTags': dto.emotionTags.map((e) => e.name).toList(),
+      },
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
@@ -65,7 +79,7 @@ class DiaryApi {
       throw Exception('Failed to fetch recent diaries: ${response.body}');
     }
 
-    final List<Map<String, dynamic>> list = jsonDecode(response.body);
+    final List<dynamic> list = jsonDecode(response.body);
     return Diary.fromJsonList(list);
   }
 
@@ -96,12 +110,17 @@ class DiaryApi {
     return Diary.fromJson(jsonDecode(response.body));
   }
 
-  Future<Diary> updateDiary(int id, Diary diary) async {
+  Future<Diary> updateDiary(int id, Diary dto) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     final response = await http.put(
       Uri.parse('$baseUrl/diaries/$id'),
       headers: await _authHeader(),
-      body: jsonEncode(diary.toJson()),
+      body: {
+        'title': dto.title,
+        'content': dto.content,
+        'tags': dto.tags.map((e) => e.name).toList(),
+        'emotionTags': dto.emotionTags.map((e) => e.name).toList(),
+      },
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to update diary: ${response.body}');
