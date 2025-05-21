@@ -13,6 +13,7 @@ import 'package:flutter_qnote/features/login/widgets/sub_spacer.dart';
 import 'package:flutter_qnote/features/login/widgets/sub_text_button.dart';
 import 'package:flutter_qnote/features/login/widgets/sub_title.widget.dart';
 import 'package:flutter_qnote/features/login/widgets/title.widget.dart';
+import 'package:flutter_qnote/features/dashboard/dashboard_screen.dart';
 import 'package:flutter_qnote/models/user.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -79,16 +80,39 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoggingIn = true;
     });
 
-    bool isSuccess = await AuthApi.getInstance.loginFetch(
-      _enteredEmail!,
-      _enteredPassword!,
-    );
+    bool isSuccess = false; // 초기값
+    try {
+      isSuccess = await AuthApi.getInstance.loginFetch(
+        _enteredEmail!,
+        _enteredPassword!,
+      );
+    } catch (e) {
+      print("Login error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('로그인 중 오류가 발생했습니다: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingIn = false;
+        });
+      }
+    }
 
-    setState(() {
-      _isLoggingIn = false;
-    });
-
-    if (isSuccess) Navigator.of(context).pop();
+    if (isSuccess && mounted) { // 로그인 성공 및 위젯 마운트 확인
+      print("Email login successful. Navigating to DashboardScreen.");
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            (Route<dynamic> route) => false, // 모든 이전 라우트 제거
+      );
+    } else if (!isSuccess && mounted) {
+      // isSuccess가 false이지만 mounted된 경우 (예: API가 false 반환)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이메일 또는 비밀번호가 일치하지 않습니다.')),
+      );
+    }
   }
 
   @override

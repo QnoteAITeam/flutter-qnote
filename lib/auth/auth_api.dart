@@ -70,12 +70,25 @@ class AuthApi {
     await _storage.write(key: 'refreshToken', value: tokens.refreshToken);
   }
 
-  void logOut() {
+  Future<void> logout() async {
     const _storage = FlutterSecureStorage();
+    try {
+      // 1. 토큰 삭제
+      await _storage.delete(key: 'accessToken');
+      await _storage.delete(key: 'refreshToken');
 
-    _storage.delete(key: 'accessToken');
-    _storage.delete(key: 'refreshToken');
+      // 2. (선택 사항) 다른 앱 상태 초기화 로직 (Riverpod, Provider 등 사용하는 경우)
+      // 예시:
+      // _userProvider.resetState(); // 가상의 Riverpod Provider 초기화
+      print("User logged out successfully. Tokens deleted.");
+
+    } catch (e) {
+      print("Error during logout: $e");
+    }
+    // 3. (LoginScreen으로 pushAndRemoveUntil 하는 로직은 여기서 하지 않음 - UI 레이어 담당)
+    // -> ProfileScreen에서 Navigator 호출
   }
+
 
   Future<bool> loginFetch(String email, String password) async {
     final response = await http.post(
