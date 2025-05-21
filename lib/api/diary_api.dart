@@ -36,17 +36,19 @@ class DiaryApi {
     final response = await http.post(
       Uri.parse('$baseUrl/diaries'),
       headers: await _authHeader(),
-      body: {
+      body: jsonEncode({
         'title': dto.title,
         'content': dto.content,
         'tags': dto.tags.map((e) => e.name).toList(),
         'emotionTags': dto.emotionTags.map((e) => e.name).toList(),
-      },
+      }),
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception('Failed to create diary: ${response.body}');
     }
+
+    print(response.body);
 
     return Diary.fromJson(jsonDecode(response.body));
   }
@@ -115,12 +117,12 @@ class DiaryApi {
     final response = await http.put(
       Uri.parse('$baseUrl/diaries/$id'),
       headers: await _authHeader(),
-      body: {
+      body: jsonEncode({
         'title': dto.title,
         'content': dto.content,
         'tags': dto.tags.map((e) => e.name).toList(),
         'emotionTags': dto.emotionTags.map((e) => e.name).toList(),
-      },
+      }),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to update diary: ${response.body}');

@@ -1,5 +1,5 @@
 class EmotionTag {
-  final int id;
+  final int? id;
   final String name;
 
   EmotionTag({required this.id, required this.name});
