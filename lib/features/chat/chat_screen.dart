@@ -1,6 +1,6 @@
 // lib/features/chat/chat_screen.dart
 import 'dart:async';
-import 'dart:convert'; // JSON 파싱을 위해 필요
+import 'dart:convert'; // SendMessageDto 내부에서 JSON 파싱에 사용될 수 있음
 import 'package:flutter/material.dart';
 import 'package:flutter_qnote/api/api_service.dart';
 import 'package:flutter_qnote/api/dto/send_message_dto.dart'; // SendMessageDto 경로 확인
@@ -23,11 +23,10 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isAiResponding = false;
   final List<SendMessageDto> chatMessages = [];
 
-  // "일기 작성/수정하기" 버튼 관련 상태 변수
-  String? _diarySummaryForButton; // 버튼이 표시될 때 사용할 요약 (asking:0 일 때의 AI 메시지)
+  String? _diarySummaryForButton;
   String? _diaryTitleForButton;
   List<String> _diaryTagsForButton = [];
-  bool _showAskingZeroDiaryButton = false; // asking:0 일 때 버튼을 표시할지 결정하는 플래그
+  bool _showAskingZeroDiaryButton = false;
 
   List<String> _currentChatOptions = [];
 
@@ -45,19 +44,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _initializeChatSession() async {
     if (!mounted) return;
-    setState(() => _isCreatingSession = true);
+    setStateIfMounted(() => _isCreatingSession = true);
     try {
       await ApiService.getInstance.createNewSession();
       if (mounted && chatMessages.isEmpty) {
-        // SendMessageDto.fromJsonByAssistant를 사용하지 않으므로, 초기 메시지는 state와 message만 명확히.
         chatMessages.add(
           SendMessageDto(
             role: MessageRole.assistance,
-            state: MessageState.asking, // 초기 질문은 asking 상태
+            state: MessageState.asking,
             message: '안녕하세요! 오늘 하루는 어떠셨나요? 😊',
+            askingNumericValue: 1, // 초기 질문이므로 asking 1 (또는 서버 스펙에 맞게)
           ),
         );
-        setState(() {
+        setStateIfMounted(() {
           _currentChatOptions = [
             '오늘 아침으로 샐러드 먹었어',
             '간단하게 시리얼 먹었어',
@@ -67,7 +66,7 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     } catch (e) {
-      print("Error initializing chat session: $e");
+      print("ChatScreen: Error initializing chat session: $e");
       if (mounted) {
         String errorMessage = "채팅 세션을 시작하는 중 오류가 발생했습니다.";
         if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
@@ -83,7 +82,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isCreatingSession = false);
+        setStateIfMounted(() => _isCreatingSession = false);
         _scrollToBottom();
       }
     }
@@ -99,11 +98,13 @@ class _ChatScreenState extends State<ChatScreen> {
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       Timer(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       });
     }
   }
@@ -111,12 +112,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage(String text, {bool isFromOption = false}) async {
     final userMessage = SendMessageDto.fromMessageByUser(text);
     if (mounted) {
-      setState(() {
+      setStateIfMounted(() {
         chatMessages.add(userMessage);
         _isAiResponding = true;
-        _showAskingZeroDiaryButton = false; // 새 메시지 전송 시 이전 버튼 상태 초기화
-        _diarySummaryForButton = null;    // 이전 요약 초기화
-        _diaryTagsForButton = [];         // 이전 태그 초기화
+        _showAskingZeroDiaryButton = false;
+        _diarySummaryForButton = null;
+        _diaryTagsForButton = [];
         if (isFromOption) {
           _currentChatOptions = [];
         }
@@ -132,30 +133,28 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     try {
-      // 서버에서 오는 응답은 SendMessageDto.fromJsonByAssistant가 파싱한다고 가정
       final SendMessageDto aiResponseFromServer = await ApiService.getInstance.sendMessageToAI(text);
-
       if (mounted) {
-        // AI 응답 처리 로직 호출
-        _processAiResponseAndUpdateState(aiResponseFromServer);
-
-        setState(() {
+        _processAiResponseAndUpdateButtonState(aiResponseFromServer);
+        setStateIfMounted(() {
           chatMessages.add(aiResponseFromServer);
-          // 옵션 버튼 로직: AI가 계속 질문 중이고(state == asking), 그 asking 값이 0이 아닐 때만 일반적인 다음 질문 옵션 표시
-          if (aiResponseFromServer.state == MessageState.asking && !_showAskingZeroDiaryButton) {
+          if (!_showAskingZeroDiaryButton &&
+              aiResponseFromServer.askingNumericValue != null &&
+              aiResponseFromServer.askingNumericValue != 0) {
+            // 서버에서 choices 필드를 받아와서 동적으로 옵션 구성하는 것이 이상적
             _currentChatOptions = [
               '네, 다음 질문해주세요.',
               '아니요, 더 할 말 없어요.',
               '음... 잠시만요.',
             ];
           } else {
-            _currentChatOptions = []; // asking:0 이거나 done 상태면 옵션 없음
+            _currentChatOptions = [];
           }
         });
         _scrollToBottom();
       }
     } catch (e) {
-      print("Error sending message to AI: $e");
+      print("ChatScreen: Error sending message to AI: $e");
       if (mounted) {
         String errorMessage = "죄송합니다, AI와 대화 중 문제가 발생했습니다.";
         if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
@@ -168,7 +167,7 @@ class _ChatScreenState extends State<ChatScreen> {
             message: errorMessage,
           ),
         );
-        setState(() {
+        setStateIfMounted(() {
           _showAskingZeroDiaryButton = false;
           _diarySummaryForButton = null;
           _currentChatOptions = [];
@@ -177,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
+        setStateIfMounted(() {
           _isAiResponding = false;
         });
         _scrollToBottom();
@@ -185,67 +184,103 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // AI 응답을 분석하여 "일기 작성/수정하기" 버튼 표시 여부 및 관련 데이터 설정
-  void _processAiResponseAndUpdateState(SendMessageDto aiMessageFromServer) {
+  void _processAiResponseAndUpdateButtonState(SendMessageDto aiMessageFromServer) {
+    // --- 로그 추가 위치 1 ---
+    print("ChatScreen: Processing AI response. askingNumericValue: ${aiMessageFromServer.askingNumericValue}, message: <<<${aiMessageFromServer.message}>>>");
+
     if (aiMessageFromServer.role != MessageRole.assistance) {
-      // AI 응답이 아니면 버튼 표시 안 함
-      _showAskingZeroDiaryButton = false;
-      _diarySummaryForButton = null;
-      _diaryTagsForButton = [];
+      setStateIfMounted(() {
+        _showAskingZeroDiaryButton = false;
+        _diarySummaryForButton = null;
+        _diaryTagsForButton = [];
+      });
       return;
     }
 
-    // SendMessageDto.fromJsonByAssistant에서 이미 1차 파싱된 message를 사용
-    // 여기서 다시 한번 asking 값을 확인해야 함. (SendMessageDto에 askingNumericValue 필드가 없으므로)
-    // 실제 AI 응답의 'message' 필드가 여전히 {"message": "...", "asking": 0} 형태의 JSON 문자열이라고 가정.
-    // 그리고 SendMessageDto.fromJsonByAssistant가 그 내부 "message"만 추출했다고 가정.
-    // 이 부분은 SendMessageDto.fromJsonByAssistant의 구현과 실제 서버 응답 스펙에 따라 달라짐.
-    // 가장 좋은 것은 SendMessageDto에 asking 숫자값을 저장하는 필드를 두는 것.
-    // 여기서는 SendMessageDto의 state가 MessageState.done으로 설정되었지만,
-    // 실제로는 asking:0 에 해당하는 메시지(일기 요약)일 수 있다는 상황을 가정.
-    // 또는, 서버 응답 JSON의 최상위에 asking 필드가 있고, SendMessageDto.fromJsonByAssistant가 이를 사용한다고 가정.
+    if (aiMessageFromServer.askingNumericValue == 0) {
+      String messageContent = aiMessageFromServer.message;
+      List<String> extractedTags = []; // 추출된 태그를 저장할 리스트
+      try {
+        // 1. 기존 #태그 추출 시도
+        RegExp exp = RegExp(r"#([\wㄱ-ㅎㅏ-ㅣ가-힣]+)");
+        Iterable<Match> matches = exp.allMatches(messageContent);
+        extractedTags = matches.map((m) {
+          String? tagWithHash = m.group(0);
+          if (tagWithHash != null && tagWithHash.startsWith("#")) {
+            return tagWithHash.substring(1);
+          }
+          return null;
+        }).where((tag) => tag != null && tag.isNotEmpty).cast<String>().toList();
 
-    // 현재 SendMessageDto.fromJsonByAssistant는 다음과 같이 구현되어 있음:
-    // state: json['asking'] == 1 ? MessageState.asking : MessageState.done,
-    // message: jsonDecode(json['message'])['message'],
-    // 즉, 서버 응답의 최상위 'asking' 필드 값에 따라 state가 결정되고,
-    // 중첩된 JSON의 'message'가 SendMessageDto의 message가 됨.
-    // 따라서, asking:0 이면 SendMessageDto.state는 MessageState.done이 됨.
-    // 그리고 SendMessageDto.message는 일기 요약 내용을 담게 됨.
+        // 2. 만약 #태그가 없다면, 내용 기반으로 간단한 자동 태그 생성 시도
+        if (extractedTags.isEmpty && messageContent.isNotEmpty) {
+          print("ChatScreen: No #tags found in AI message, trying to auto-generate tags from content.");
+          // 매우 간단한 예시: 특정 키워드 포함 여부로 태그 생성
+          List<String> keywordCandidates = [];
+          // 자주 사용될 만한 긍정/부정/일상 관련 키워드 추가 (더 많은 키워드 및 정교한 로직 필요)
+          if (messageContent.contains("행복") || messageContent.contains("즐거") || messageContent.contains("기뻤")) keywordCandidates.add("행복");
+          if (messageContent.contains("감사") || messageContent.contains("고마")) keywordCandidates.add("감사");
+          if (messageContent.contains("슬픔") || messageContent.contains("우울") || messageContent.contains("힘들")) keywordCandidates.add("슬픔");
+          if (messageContent.contains("화남") || messageContent.contains("짜증")) keywordCandidates.add("화남");
+          if (messageContent.contains("일상") || messageContent.contains("평범") || messageContent.contains("보통")) keywordCandidates.add("일상");
+          if (messageContent.contains("샐러드")) keywordCandidates.add("샐러드");
+          if (messageContent.contains("아침")) keywordCandidates.add("아침식사");
+          if (messageContent.contains("운동")) keywordCandidates.add("운동");
+          if (messageContent.contains("공부")) keywordCandidates.add("공부");
+          if (messageContent.contains("친구")) keywordCandidates.add("친구");
+          if (messageContent.contains("가족")) keywordCandidates.add("가족");
 
-    // 결론: "일기 작성/수정하기" 버튼은 AI 응답의 state가 MessageState.done 이고,
-    // 그 메시지가 단순한 done 응답이 아니라 asking:0에 해당하는 요약일 때 표시되어야 함.
-    // 이 "asking:0에 해당하는 요약"인지 여부를 판단하는 명확한 방법이 SendMessageDto에 필요.
-    // 여기서는 임시로, state가 done이고, message가 비어있지 않으면 요약으로 간주. (개선 필요)
+          // 중복을 제거하고 최대 3개의 키워드 태그만 사용
+          extractedTags.addAll(keywordCandidates.toSet().take(3));
 
-    if (aiMessageFromServer.state == MessageState.done && aiMessageFromServer.message.isNotEmpty) {
-      // TODO: 이 조건이 정말로 "asking:0" (일기 요약 제안) 상황인지 서버 응답 스펙과 SendMessageDto.fromJsonByAssistant를 보고 다시 확인해야 함.
-      // 만약 SendMessageDto에 `askingNumericValue` 필드가 있다면,
-      // `if (aiMessageFromServer.askingNumericValue == 0)` 와 같이 명확하게 판단 가능.
-      // 현재는 SendMessageDto의 state가 MessageState.done으로 설정된 경우, 이것이 asking:0에 의한 요약이라고 가정.
+          // 그래도 태그가 없다면, 메시지에서 길이가 2 이상인 단어 중 처음 2개 (매우 단순)
+          if (extractedTags.isEmpty) {
+            List<String> words = messageContent
+                .replaceAll(RegExp(r'[^\w\sㄱ-ㅎㅏ-ㅣ가-힣]'), '') // 간단한 특수문자 제거
+                .split(RegExp(r'\s+'))
+                .where((word) => word.length > 1 && !_isCommonWord(word)) // 흔한 단어 제외
+                .toList();
+            if (words.isNotEmpty) {
+              extractedTags = words.take(2).toList();
+            }
+          }
+          print("ChatScreen: Auto-generated tags: $extractedTags");
+        }
 
-      String messageContent = aiMessageFromServer.message; // 이것이 요약이라고 가정
-      _diarySummaryForButton = messageContent;
-      _diaryTitleForButton = '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
-      RegExp exp = RegExp(r"#([\wㄱ-ㅎㅏ-ㅣ가-힣]+)");
-      Iterable<Match> matches = exp.allMatches(messageContent);
-      _diaryTagsForButton = matches.map((m) => m.group(1)!).toList();
-      _showAskingZeroDiaryButton = true;
-      print("일기 작성/수정하기 버튼 표시 조건 충족 (asking:0 추정)");
+      } catch (e) {
+        print("ChatScreen: Error extracting/generating tags: $e");
+      }
+
+      setStateIfMounted(() {
+        _diarySummaryForButton = messageContent;
+        _diaryTitleForButton = '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
+        _diaryTagsForButton = extractedTags.toSet().toList(); // 최종적으로 중복 제거
+        _showAskingZeroDiaryButton = true;
+        // --- 로그 추가 위치 2 ---
+        print("ChatScreen: 일기 작성/수정하기 버튼 표시 (askingNumericValue == 0). Final Tags: $_diaryTagsForButton");
+      });
     } else {
-      _showAskingZeroDiaryButton = false;
-      _diarySummaryForButton = null;
-      _diaryTagsForButton = [];
-      print("일기 작성/수정하기 버튼 표시 조건 미충족: state=${aiMessageFromServer.state}, message='${aiMessageFromServer.message}'");
+      setStateIfMounted(() {
+        _showAskingZeroDiaryButton = false;
+        _diarySummaryForButton = null;
+        _diaryTagsForButton = [];
+        // --- 로그 추가 위치 3 ---
+        print("ChatScreen: 일기 작성/수정하기 버튼 숨김 (askingNumericValue = ${aiMessageFromServer.askingNumericValue})");
+      });
     }
   }
 
-  // _checkForDiarySuggestion 함수는 _processAiResponseAndUpdateState로 대체
-  /*
-  void _checkForDiarySuggestion(SendMessageDto aiMessage) {
-    // ...
+  // 흔한 단어 제외를 위한 간단한 헬퍼 함수 (필요시 확장)
+  bool _isCommonWord(String word) {
+    const commonWords = ['오늘', '어제', '내일', '나는', '나의', '내가', '너는', '너의', '그는', '그녀는', '우리', '그리고', '그래서', '하지만', '그러나', '이제', '정말', '매우', '아주', '너무', '조금', '많이', '항상', '가끔', '때때로', '여기', '저기', '이것', '저것', '그것', '있다', '없다', '했다', '이다', '입니다'];
+    return commonWords.contains(word.toLowerCase());
   }
-  */
+
+  void setStateIfMounted(VoidCallback fn) {
+    if (mounted) {
+      setState(fn);
+    }
+  }
 
   void _onPressedSendButton() {
     final data = _textController.text;
@@ -260,14 +295,18 @@ class _ChatScreenState extends State<ChatScreen> {
   void _navigateToDiaryDetailScreen() async {
     if (!_showAskingZeroDiaryButton || _diarySummaryForButton == null || !mounted) return;
 
+    // --- 로그 추가 위치 4 ---
+    print("ChatScreen: Navigating to DiaryDetailScreen with tags: $_diaryTagsForButton, title: $_diaryTitleForButton, summary: $_diarySummaryForButton");
+
     final result = await Navigator.push<Diary>(
       context,
       MaterialPageRoute(
         builder: (context) => DiaryDetailScreen(
           initialTitle: _diaryTitleForButton,
-          initialContent: _diarySummaryForButton!, // null이 아님을 보장
+          initialContent: _diarySummaryForButton!,
           initialSummaryFromAI: _diarySummaryForButton,
           initialTags: _diaryTagsForButton,
+          initialDate: DateTime.now(), // 현재 날짜 전달
         ),
       ),
     );
@@ -292,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
               CircleAvatar(
                 radius: 18,
                 backgroundImage: const AssetImage('assets/images/ai_avatar.png'),
-                onBackgroundImageError: (e, s) => print('Error loading ai_avatar: $e'),
+                onBackgroundImageError: (e, s) => print('ChatScreen: Error loading ai_avatar: $e'),
                 child: !const AssetImage('assets/images/ai_avatar.png').assetName.contains('placeholder')
                     ? null
                     : Icon(Icons.support_agent, size: 20, color: Colors.blue.shade700),
@@ -330,28 +369,24 @@ class _ChatScreenState extends State<ChatScreen> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16.0),
-              // itemCount 계산: 메시지 수 + 로딩 인디케이터 (있다면) + 일기 작성 버튼 (있다면)
               itemCount: chatMessages.length +
                   (_isAiResponding ? 1 : 0) +
-                  (_showAskingZeroDiaryButton && !_isAiResponding ? 1 : 0), // 수정된 조건
+                  (_showAskingZeroDiaryButton && !_isAiResponding ? 1 : 0),
               itemBuilder: (context, index) {
                 int messageBoundary = chatMessages.length;
-                // 로딩 인디케이터 다음 또는 메시지 다음이 버튼 위치
                 int buttonIndexCandidate = messageBoundary + (_isAiResponding ? 1 : 0);
 
                 if (_isAiResponding && index == messageBoundary) {
                   return _buildShimmerLoadingBubble();
                 }
-                // "일기 작성/수정하기" 버튼 표시 조건
                 if (_showAskingZeroDiaryButton && !_isAiResponding && index == buttonIndexCandidate) {
                   return _buildSaveDiaryWidget();
                 }
-                // 메시지 버블 표시 (인덱스 범위 확인)
                 if (index < chatMessages.length) {
                   final msg = chatMessages[index];
                   return _buildChatMessageBubble(msg);
                 }
-                return const SizedBox.shrink(); // 예상치 못한 인덱스 처리
+                return const SizedBox.shrink();
               },
             ),
           ),
@@ -362,7 +397,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // --- 나머지 위젯 빌드 함수들은 이전과 동일하게 유지 ---
   Widget _buildShimmerLoadingBubble() {
     return Align(
       alignment: Alignment.centerLeft,
@@ -445,7 +479,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(left: 40.0, top: 10.0, bottom: 10.0, right: 16.0), // AI 아바타와 유사한 위치
+        padding: const EdgeInsets.only(left: 40.0, top: 10.0, bottom: 10.0, right: 16.0),
         child: ElevatedButton.icon(
           icon: Icon(Icons.edit_note_outlined, color: Colors.brown.shade700, size: 20),
           label: Text(
@@ -472,7 +506,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      constraints: const BoxConstraints(maxHeight: 50), // 높이 제한으로 여러 줄 방지
+      constraints: const BoxConstraints(maxHeight: 50),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1.0)),
@@ -495,8 +529,8 @@ class _ChatScreenState extends State<ChatScreen> {
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFFF5F0E9),
-        foregroundColor: const Color(0xFF4A4A4A), // 텍스트 색상
-        elevation: 0, // 그림자 없음
+        foregroundColor: const Color(0xFF4A4A4A),
+        elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
@@ -506,9 +540,9 @@ class _ChatScreenState extends State<ChatScreen> {
         overlayColor: MaterialStateProperty.resolveWith<Color?>(
               (Set<MaterialState> states) {
             if (states.contains(MaterialState.pressed)) {
-              return Colors.brown.withOpacity(0.1); // 클릭 시 오버레이 색상
+              return Colors.brown.withOpacity(0.1);
             }
-            return null; // 기본값 사용
+            return null;
           },
         ),
       ),
@@ -523,14 +557,14 @@ class _ChatScreenState extends State<ChatScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            offset: const Offset(0, -1), // 상단 그림자
+            offset: const Offset(0, -1),
             blurRadius: 4,
-            color: Colors.grey.withAlpha((0.05 * 255).round()), // 연한 그림자
+            color: Colors.grey.withAlpha((0.05 * 255).round()),
           ),
         ],
       ),
-      child: SafeArea( // 하단 노치 영역 등을 고려
-        top: false, // 상단 SafeArea는 AppBar가 처리
+      child: SafeArea(
+        top: false,
         child: Row(
           children: [
             IconButton(
@@ -545,7 +579,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200], // 입력창 배경색
+                  color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(25.0),
                 ),
                 child: TextField(
@@ -554,11 +588,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     hintText: '자유롭게 답변하기',
                     hintStyle: TextStyle(color: Colors.grey[500]),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0), // 내부 패딩
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
                   ),
                   minLines: 1,
-                  maxLines: 5, // 여러 줄 입력 가능
-                  textInputAction: TextInputAction.send, // 엔터키 액션
+                  maxLines: 5,
+                  textInputAction: TextInputAction.send,
                   onSubmitted: (text) => _onPressedSendButton(),
                 ),
               ),
