@@ -30,8 +30,8 @@ class Diary {
       summary: json['summary'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
-      tags: Tag.fromJsonList(json['tags']),
-      emotionTags: EmotionTag.fromJsonList(json['emotionTags']),
+      tags: Tag.fromJsonList(json['tags']) ?? [],
+      emotionTags: EmotionTag.fromJsonList(json['emotionTags']) ?? [],
     );
   }
 

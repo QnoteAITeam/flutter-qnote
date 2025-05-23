@@ -77,6 +77,9 @@ class ApiService {
       },
     );
 
+    print('ChatScreen 을 성공적으로 만들었습니다.');
+    print(response.body);
+
     return ChatSession.fromJson(jsonDecode(response.body));
   }
 

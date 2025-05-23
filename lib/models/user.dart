@@ -4,7 +4,7 @@ import 'package:flutter_qnote/models/emotion_tag.dart';
 import 'package:flutter_qnote/models/tag.dart';
 
 class User {
-  final String id;
+  final String? id;
   final String username;
   final String email;
   final int? age;
@@ -13,9 +13,9 @@ class User {
   final String? profileImage;
   final String role;
   final String? phoneNumber;
-  final bool emailVerified;
-  final int loginAttempts;
-  final String provider;
+  final bool? emailVerified;
+  final int? loginAttempts;
+  final String? provider;
   final List<ChatSession> sessions;
   final List<Diary> diaries;
   final List<EmotionTag> emotionTags;

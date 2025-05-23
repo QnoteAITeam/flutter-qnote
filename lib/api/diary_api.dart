@@ -53,7 +53,7 @@ class DiaryApi {
     return Diary.fromJson(jsonDecode(response.body));
   }
 
-  //한 페이지당 50개 단위로 줍니다.
+  //한 페이지당 10개 단위로 줍니다.
   Future<List<Diary>> getAllDiaries(int page) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
@@ -124,7 +124,7 @@ class DiaryApi {
         'emotionTags': dto.emotionTags.map((e) => e.name).toList(),
       }),
     );
-    if (response.statusCode != 200) {
+    if (response.statusCode != 201) {
       throw Exception('Failed to update diary: ${response.body}');
     }
     return Diary.fromJson(jsonDecode(response.body));

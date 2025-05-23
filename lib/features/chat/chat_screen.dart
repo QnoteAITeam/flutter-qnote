@@ -70,7 +70,8 @@ class _ChatScreenState extends State<ChatScreen> {
       print("ChatScreen: Error initializing chat session: $e");
       if (mounted) {
         String errorMessage = "채팅 세션을 시작하는 중 오류가 발생했습니다.";
-        if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
+        if (e.toString().toLowerCase().contains('unauthorized') ||
+            e.toString().contains('401')) {
           errorMessage = "세션 시작에 실패했습니다. 다시 로그인 후 시도해주세요.";
         }
         chatMessages.add(
@@ -126,7 +127,9 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom();
     }
 
-    if (!isFromOption && text.trim().isNotEmpty && text == _textController.text) {
+    if (!isFromOption &&
+        text.trim().isNotEmpty &&
+        text == _textController.text) {
       _textController.clear();
     }
     if (!isFromOption) {
@@ -134,7 +137,8 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     try {
-      final SendMessageDto aiResponseFromServer = await ApiService.getInstance.sendMessageToAI(text);
+      final SendMessageDto aiResponseFromServer = await ApiService.getInstance
+          .sendMessageToAI(text);
       if (mounted) {
         _processAiResponseAndUpdateButtonState(aiResponseFromServer);
         setStateIfMounted(() {
@@ -157,7 +161,8 @@ class _ChatScreenState extends State<ChatScreen> {
       print("ChatScreen: Error sending message to AI: $e");
       if (mounted) {
         String errorMessage = "죄송합니다, AI와 대화 중 문제가 발생했습니다.";
-        if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
+        if (e.toString().toLowerCase().contains('unauthorized') ||
+            e.toString().contains('401')) {
           errorMessage = "세션이 만료되었거나 인증 오류가 발생했습니다.";
         }
         // *** UI 변경 요청 반영: AI 대화 중 오류 메시지를 AI 응답 스타일로 변경 ***
@@ -185,8 +190,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _processAiResponseAndUpdateButtonState(SendMessageDto aiMessageFromServer) {
-    print("ChatScreen: Processing AI response. askingNumericValue: ${aiMessageFromServer.askingNumericValue}, message: <<<${aiMessageFromServer.message}>>>");
+  void _processAiResponseAndUpdateButtonState(
+    SendMessageDto aiMessageFromServer,
+  ) {
+    print(
+      "ChatScreen: Processing AI response. askingNumericValue: ${aiMessageFromServer.askingNumericValue}, message: <<<${aiMessageFromServer.message}>>>",
+    );
 
     if (aiMessageFromServer.role != MessageRole.assistance) {
       setStateIfMounted(() {
@@ -203,29 +212,44 @@ class _ChatScreenState extends State<ChatScreen> {
       try {
         RegExp exp = RegExp(r"#([\wㄱ-ㅎㅏ-ㅣ가-힣]+)");
         Iterable<Match> matches = exp.allMatches(messageContent);
-        extractedTags = matches.map((m) {
-          String? tagWithHash = m.group(0);
-          if (tagWithHash != null && tagWithHash.startsWith("#")) {
-            return tagWithHash.substring(1);
-          }
-          return null;
-        }).where((tag) => tag != null && tag.isNotEmpty).cast<String>().toList();
+        extractedTags =
+            matches
+                .map((m) {
+                  String? tagWithHash = m.group(0);
+                  if (tagWithHash != null && tagWithHash.startsWith("#")) {
+                    return tagWithHash.substring(1);
+                  }
+                  return null;
+                })
+                .where((tag) => tag != null && tag.isNotEmpty)
+                .cast<String>()
+                .toList();
 
         if (extractedTags.isEmpty && messageContent.isNotEmpty) {
-          print("ChatScreen: No #tags found in AI message, trying to auto-generate tags from content.");
+          print(
+            "ChatScreen: No #tags found in AI message, trying to auto-generate tags from content.",
+          );
           List<String> keywordCandidates = [];
-          if (messageContent.contains("행복") || messageContent.contains("즐거") || messageContent.contains("기뻤")) keywordCandidates.add("행복");
-          if (messageContent.contains("감사") || messageContent.contains("고마")) keywordCandidates.add("감사");
-          if (messageContent.contains("슬픔") || messageContent.contains("우울") || messageContent.contains("힘들")) keywordCandidates.add("슬픔");
+          if (messageContent.contains("행복") ||
+              messageContent.contains("즐거") ||
+              messageContent.contains("기뻤"))
+            keywordCandidates.add("행복");
+          if (messageContent.contains("감사") || messageContent.contains("고마"))
+            keywordCandidates.add("감사");
+          if (messageContent.contains("슬픔") ||
+              messageContent.contains("우울") ||
+              messageContent.contains("힘들"))
+            keywordCandidates.add("슬픔");
           if (messageContent.contains("샐러드")) keywordCandidates.add("샐러드");
           if (messageContent.contains("아침")) keywordCandidates.add("아침식사");
           extractedTags.addAll(keywordCandidates.toSet().take(3));
           if (extractedTags.isEmpty) {
-            List<String> words = messageContent
-                .replaceAll(RegExp(r'[^\w\sㄱ-ㅎㅏ-ㅣ가-힣]'), '')
-                .split(RegExp(r'\s+'))
-                .where((word) => word.length > 1 && !_isCommonWord(word))
-                .toList();
+            List<String> words =
+                messageContent
+                    .replaceAll(RegExp(r'[^\w\sㄱ-ㅎㅏ-ㅣ가-힣]'), '')
+                    .split(RegExp(r'\s+'))
+                    .where((word) => word.length > 1 && !_isCommonWord(word))
+                    .toList();
             if (words.isNotEmpty) {
               extractedTags = words.take(2).toList();
             }
@@ -237,23 +261,68 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       setStateIfMounted(() {
         _diarySummaryForButton = messageContent;
-        _diaryTitleForButton = '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
+        _diaryTitleForButton =
+            '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
         _diaryTagsForButton = extractedTags.toSet().toList();
         _showAskingZeroDiaryButton = true;
-        print("ChatScreen: 일기 작성/수정하기 버튼 표시 (askingNumericValue == 0). Final Tags: $_diaryTagsForButton");
+        print(
+          "ChatScreen: 일기 작성/수정하기 버튼 표시 (askingNumericValue == 0). Final Tags: $_diaryTagsForButton",
+        );
       });
     } else {
       setStateIfMounted(() {
         _showAskingZeroDiaryButton = false;
         _diarySummaryForButton = null;
         _diaryTagsForButton = [];
-        print("ChatScreen: 일기 작성/수정하기 버튼 숨김 (askingNumericValue = ${aiMessageFromServer.askingNumericValue})");
+        print(
+          "ChatScreen: 일기 작성/수정하기 버튼 숨김 (askingNumericValue = ${aiMessageFromServer.askingNumericValue})",
+        );
       });
     }
   }
 
   bool _isCommonWord(String word) {
-    const commonWords = ['오늘', '어제', '내일', '나는', '나의', '내가', '너는', '너의', '그는', '그녀는', '우리', '그리고', '그래서', '하지만', '그러나', '이제', '정말', '매우', '아주', '너무', '조금', '많이', '항상', '가끔', '때때로', '여기', '저기', '이것', '저것', '그것', '있다', '없다', '했다', '이다', '입니다', '같아요', '했어요', '있어요', '없어요'];
+    const commonWords = [
+      '오늘',
+      '어제',
+      '내일',
+      '나는',
+      '나의',
+      '내가',
+      '너는',
+      '너의',
+      '그는',
+      '그녀는',
+      '우리',
+      '그리고',
+      '그래서',
+      '하지만',
+      '그러나',
+      '이제',
+      '정말',
+      '매우',
+      '아주',
+      '너무',
+      '조금',
+      '많이',
+      '항상',
+      '가끔',
+      '때때로',
+      '여기',
+      '저기',
+      '이것',
+      '저것',
+      '그것',
+      '있다',
+      '없다',
+      '했다',
+      '이다',
+      '입니다',
+      '같아요',
+      '했어요',
+      '있어요',
+      '없어요',
+    ];
     return commonWords.contains(word.toLowerCase());
   }
 
@@ -274,41 +343,53 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _navigateToDiaryDetailScreen() async {
-    if (!_showAskingZeroDiaryButton || _diarySummaryForButton == null || !mounted) return;
+    if (!_showAskingZeroDiaryButton ||
+        _diarySummaryForButton == null ||
+        !mounted)
+      return;
 
-    print("ChatScreen: Navigating to DiaryDetailScreen with tags: $_diaryTagsForButton, title: $_diaryTitleForButton, summary: $_diarySummaryForButton");
+    print(
+      "ChatScreen: Navigating to DiaryDetailScreen with tags: $_diaryTagsForButton, title: $_diaryTitleForButton, summary: $_diarySummaryForButton",
+    );
 
     final Diary? result = await Navigator.push<Diary>(
       context,
       MaterialPageRoute(
-        builder: (context) => DiaryDetailScreen(
-          initialTitle: _diaryTitleForButton,
-          initialContent: _diarySummaryForButton!,
-          initialSummaryFromAI: _diarySummaryForButton,
-          initialTags: _diaryTagsForButton,
-          initialDate: DateTime.now(),
-        ),
+        builder:
+            (context) => DiaryDetailScreen(
+              initialTitle: _diaryTitleForButton,
+              initialContent: _diarySummaryForButton!,
+              initialSummaryFromAI: _diarySummaryForButton,
+              initialTags: _diaryTagsForButton,
+              initialDate: DateTime.now(),
+            ),
       ),
     );
 
     if (!mounted) return;
 
     if (result != null) {
-      print("ChatScreen: Returned from DiaryDetailScreen with Diary ID: ${result.id}");
+      print(
+        "ChatScreen: Returned from DiaryDetailScreen with Diary ID: ${result.id}",
+      );
       setStateIfMounted(() {
         _showAskingZeroDiaryButton = false;
         _diarySummaryForButton = null;
         _diaryTagsForButton = [];
         _currentChatOptions = [];
-        chatMessages.add(SendMessageDto(
-          role: MessageRole.assistance, // AI 응답 스타일로 변경
-          state: MessageState.done,
-          message: "AI가 요약하여 일기를 저장했습니다. (ID: ${result.id})",
-        ));
+        chatMessages.add(
+          SendMessageDto(
+            role: MessageRole.assistance, // AI 응답 스타일로 변경
+            state: MessageState.done,
+            message: "AI가 요약하여 일기를 저장했습니다. (ID: ${result.id})",
+          ),
+        );
       });
       _scrollToBottom();
     } else {
-      print("ChatScreen: Returned from DiaryDetailScreen without saving a diary (result is null).");
+      print(
+        "ChatScreen: Returned from DiaryDetailScreen without saving a diary (result is null).",
+      );
       setStateIfMounted(() {
         _showAskingZeroDiaryButton = false;
       });
@@ -330,19 +411,39 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundImage: const AssetImage('assets/images/ai_avatar.png'),
-                onBackgroundImageError: (e, s) => print('ChatScreen: Error loading ai_avatar: $e'),
-                child: !const AssetImage('assets/images/ai_avatar.png').assetName.contains('placeholder')
-                    ? null
-                    : Icon(Icons.support_agent, size: 20, color: Colors.blue.shade700),
+                backgroundImage: const AssetImage(
+                  'assets/images/ai_avatar.png',
+                ),
+                onBackgroundImageError:
+                    (e, s) => print('ChatScreen: Error loading ai_avatar: $e'),
+                child:
+                    !const AssetImage(
+                          'assets/images/ai_avatar.png',
+                        ).assetName.contains('placeholder')
+                        ? null
+                        : Icon(
+                          Icons.support_agent,
+                          size: 20,
+                          color: Colors.blue.shade700,
+                        ),
               ),
               const SizedBox(width: 10),
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('큐노트 AI', style: TextStyle(color: Colors.black, fontSize: 17, fontWeight: FontWeight.bold)),
-                  Text('오늘 하루를 요약해 보세요!', style: TextStyle(color: Colors.black54, fontSize: 12)),
+                  Text(
+                    '큐노트 AI',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '오늘 하루를 요약해 보세요!',
+                    style: TextStyle(color: Colors.black54, fontSize: 12),
+                  ),
                 ],
               ),
             ],
@@ -350,7 +451,11 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.info_outline, color: Colors.grey.shade600, size: 24),
+            icon: Icon(
+              Icons.info_outline,
+              color: Colors.grey.shade600,
+              size: 24,
+            ),
             tooltip: 'AI 챗봇 정보',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -361,38 +466,49 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: _isCreatingSession
-          ? const Center(child: CircularProgressIndicator(key: ValueKey("chat_session_loading")))
-          : Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16.0),
-              itemCount: chatMessages.length +
-                  (_isAiResponding ? 1 : 0) +
-                  (_showAskingZeroDiaryButton && !_isAiResponding ? 1 : 0),
-              itemBuilder: (context, index) {
-                int messageBoundary = chatMessages.length;
-                int buttonIndexCandidate = messageBoundary + (_isAiResponding ? 1 : 0);
-                if (_isAiResponding && index == messageBoundary) {
-                  return _buildShimmerLoadingBubble();
-                }
-                if (_showAskingZeroDiaryButton && !_isAiResponding && index == buttonIndexCandidate) {
-                  return _buildSaveDiaryWidget();
-                }
-                if (index < chatMessages.length) {
-                  final msg = chatMessages[index];
-                  return _buildChatMessageBubble(msg);
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-          _buildChatOptionsArea(),
-          _buildInputArea(),
-        ],
-      ),
+      body:
+          _isCreatingSession
+              ? const Center(
+                child: CircularProgressIndicator(
+                  key: ValueKey("chat_session_loading"),
+                ),
+              )
+              : Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount:
+                          chatMessages.length +
+                          (_isAiResponding ? 1 : 0) +
+                          (_showAskingZeroDiaryButton && !_isAiResponding
+                              ? 1
+                              : 0),
+                      itemBuilder: (context, index) {
+                        int messageBoundary = chatMessages.length;
+                        int buttonIndexCandidate =
+                            messageBoundary + (_isAiResponding ? 1 : 0);
+                        if (_isAiResponding && index == messageBoundary) {
+                          return _buildShimmerLoadingBubble();
+                        }
+                        if (_showAskingZeroDiaryButton &&
+                            !_isAiResponding &&
+                            index == buttonIndexCandidate) {
+                          return _buildSaveDiaryWidget();
+                        }
+                        if (index < chatMessages.length) {
+                          final msg = chatMessages[index];
+                          return _buildChatMessageBubble(msg);
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                  _buildChatOptionsArea(),
+                  _buildInputArea(),
+                ],
+              ),
     );
   }
 
@@ -409,20 +525,21 @@ class _ChatScreenState extends State<ChatScreen> {
             ClipOval(child: smallAiAvatar),
             const SizedBox(width: 8),
             Container(
-                margin: const EdgeInsets.symmetric(vertical: 4.0),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(width: 120, height: 10.0, color: Colors.white),
-                    const SizedBox(height: 4),
-                    Container(width: 80, height: 10.0, color: Colors.white),
-                  ],
-                ))
+              margin: const EdgeInsets.symmetric(vertical: 4.0),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(width: 120, height: 10.0, color: Colors.white),
+                  const SizedBox(height: 4),
+                  Container(width: 80, height: 10.0, color: Colors.white),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -449,30 +566,44 @@ class _ChatScreenState extends State<ChatScreen> {
               margin: const EdgeInsets.symmetric(vertical: 4.0),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isUserMessage
-                    ? const Color(0xFFB59A7B)
-                    : (isAssistanceMessage
-                    ? Colors.grey[200] // AI 메시지 배경색
-                    : (isSystemMessage
-                    ? Colors.amber.shade100 // 일반 시스템 메시지 배경색
-                    : Colors.grey[200])), // 기본값
+                color:
+                    isUserMessage
+                        ? const Color(0xFFB59A7B)
+                        : (isAssistanceMessage
+                            ? Colors.grey[200] // AI 메시지 배경색
+                            : (isSystemMessage
+                                ? Colors
+                                    .amber
+                                    .shade100 // 일반 시스템 메시지 배경색
+                                : Colors.grey[200])), // 기본값
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
-                  bottomLeft: isUserMessage ? const Radius.circular(16) : const Radius.circular(4),
-                  bottomRight: isUserMessage ? const Radius.circular(4) : const Radius.circular(16),
+                  bottomLeft:
+                      isUserMessage
+                          ? const Radius.circular(16)
+                          : const Radius.circular(4),
+                  bottomRight:
+                      isUserMessage
+                          ? const Radius.circular(4)
+                          : const Radius.circular(16),
                 ),
               ),
               child: Text(
                 messageDto.message,
                 style: TextStyle(
-                    color: isUserMessage
-                        ? Colors.white
-                        : (isAssistanceMessage
-                        ? Colors.black87 // AI 메시지 텍스트 색상
-                        : (isSystemMessage
-                        ? Colors.orange.shade800 // 일반 시스템 메시지 텍스트 색상
-                        : Colors.black87))),
+                  color:
+                      isUserMessage
+                          ? Colors.white
+                          : (isAssistanceMessage
+                              ? Colors
+                                  .black87 // AI 메시지 텍스트 색상
+                              : (isSystemMessage
+                                  ? Colors
+                                      .orange
+                                      .shade800 // 일반 시스템 메시지 텍스트 색상
+                                  : Colors.black87)),
+                ),
               ),
             ),
           ),
@@ -485,12 +616,25 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(left: 40.0, top: 10.0, bottom: 10.0, right: 16.0),
+        padding: const EdgeInsets.only(
+          left: 40.0,
+          top: 10.0,
+          bottom: 10.0,
+          right: 16.0,
+        ),
         child: ElevatedButton.icon(
-          icon: Icon(Icons.edit_note_outlined, color: Colors.brown.shade700, size: 20),
+          icon: Icon(
+            Icons.edit_note_outlined,
+            color: Colors.brown.shade700,
+            size: 20,
+          ),
           label: Text(
             '일기 작성/수정하기',
-            style: TextStyle(color: Colors.brown.shade800, fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(
+              color: Colors.brown.shade800,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
           onPressed: _navigateToDiaryDetailScreen,
           style: ElevatedButton.styleFrom(
@@ -515,7 +659,9 @@ class _ChatScreenState extends State<ChatScreen> {
       constraints: const BoxConstraints(maxHeight: 50),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1.0)),
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade200, width: 1.0),
+        ),
       ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -523,7 +669,10 @@ class _ChatScreenState extends State<ChatScreen> {
         itemCount: _currentChatOptions.length,
         itemBuilder: (context, index) {
           final optionText = _currentChatOptions[index];
-          return _buildOptionButton(optionText, () => _onOptionTapped(optionText));
+          return _buildOptionButton(
+            optionText,
+            () => _onOptionTapped(optionText),
+          );
         },
         separatorBuilder: (context, index) => const SizedBox(width: 8),
       ),
@@ -543,14 +692,14 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
       ).copyWith(
-        overlayColor: MaterialStateProperty.resolveWith<Color?>(
-              (Set<MaterialState> states) {
-            if (states.contains(MaterialState.pressed)) {
-              return Colors.brown.withOpacity(0.1);
-            }
-            return null;
-          },
-        ),
+        overlayColor: MaterialStateProperty.resolveWith<Color?>((
+          Set<MaterialState> states,
+        ) {
+          if (states.contains(MaterialState.pressed)) {
+            return Colors.brown.withOpacity(0.1);
+          }
+          return null;
+        }),
       ),
       child: Text(text),
     );
@@ -574,7 +723,11 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.add_circle_outline, color: Colors.grey[600], size: 28),
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: Colors.grey[600],
+                size: 28,
+              ),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('첨부 기능은 준비 중입니다.')),
@@ -594,7 +747,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     hintText: '자유롭게 답변하기',
                     hintStyle: TextStyle(color: Colors.grey[500]),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 10.0,
+                      horizontal: 4.0,
+                    ),
                   ),
                   minLines: 1,
                   maxLines: 5,
@@ -604,7 +760,11 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.send_rounded, color: const Color(0xFFB59A7B), size: 28),
+              icon: Icon(
+                Icons.send_rounded,
+                color: const Color(0xFFB59A7B),
+                size: 28,
+              ),
               onPressed: _onPressedSendButton,
             ),
           ],

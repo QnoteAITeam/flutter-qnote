@@ -19,12 +19,16 @@ class UserApi {
 
   //기본적인 유저의 정보를 관리합니다.
   Future<User> getUserCredential() async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse('$baseUrl/users/my'),
       headers: {
         'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
     );
+
+    print(response.body);
 
     return User.fromJson(jsonDecode(response.body));
   }
