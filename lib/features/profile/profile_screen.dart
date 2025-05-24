@@ -16,7 +16,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userEmail = "kimkimkim@gmail.com";
   String _userPhoneNumber = "010-1234-5678";
   String? _userAvatarUrl;
-  final String _defaultAvatarAsset = "assets/images/profile_avatar_placeholder.png";
+  final String _defaultAvatarAsset = "assets/images/ai_avatar.png";
 
   @override
   void initState() {

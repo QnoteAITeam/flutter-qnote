@@ -1,27 +1,25 @@
-// lib/features/diary/diary_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_qnote/api/diary_api.dart';
 import 'package:flutter_qnote/models/diary.dart';
-import 'package:flutter_qnote/models/tag.dart';
-import 'package:flutter_qnote/models/emotion_tag.dart';
 import 'package:intl/intl.dart';
+import 'widgets/date_selector_widget.dart';
 
 class DiaryDetailScreen extends StatefulWidget {
+  final Diary? diaryToEdit;
   final String? initialTitle;
   final String? initialContent;
   final String? initialSummaryFromAI;
   final List<String>? initialTags;
   final DateTime? initialDate;
-  final Diary? diaryToEdit;
 
   const DiaryDetailScreen({
     Key? key,
+    this.diaryToEdit,
     this.initialTitle,
     this.initialContent,
     this.initialSummaryFromAI,
     this.initialTags,
     this.initialDate,
-    this.diaryToEdit,
   }) : super(key: key);
 
   @override
@@ -33,38 +31,36 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   late TextEditingController _contentController;
   late TextEditingController _tagsController;
   late DateTime _selectedDate;
-  List<String> _currentTagsList = [];
-  List<EmotionTag> _currentEmotionTags = [];
-
   bool _isLoading = false;
 
-  final double _labelFontSize = 16.0;
-  final FontWeight _labelFontWeight = FontWeight.bold;
-  final Color _labelTextColor = Colors.black87;
-  final Color _fieldBackgroundColor = Colors.grey.shade100;
-  final double _fieldFontSize = 15.0;
+  static const Color _fieldBackgroundColor = Color(0xFFF5F5F5);
+  static const double _fieldFontSize = 15.0;
 
   @override
   void initState() {
     super.initState();
+    _initializeFields();
+  }
 
+  void _initializeFields() {
     if (widget.diaryToEdit != null) {
       final diary = widget.diaryToEdit!;
       _titleController = TextEditingController(text: diary.title);
       _contentController = TextEditingController(text: diary.content);
-      _currentTagsList = diary.tags.map((tag) => tag.name).toList();
-      _tagsController = TextEditingController(text: _currentTagsList.join(', '));
+      // 기존 일기의 tags, emotionTags를 모두 합쳐서 표시
+      final allTags = [...diary.tags, ...diary.emotionTags];
+      _tagsController = TextEditingController(text: allTags.join(', '));
       _selectedDate = diary.createdAt ?? diary.updatedAt ?? DateTime.now();
-      _currentEmotionTags = List<EmotionTag>.from(diary.emotionTags);
     } else {
       _selectedDate = widget.initialDate ?? DateTime.now();
-      _titleController = TextEditingController(
-          text: widget.initialTitle ?? '오늘의 일기 (${DateFormat('yyyy.MM.dd. E', 'ko_KR').format(_selectedDate)})');
+      _titleController = TextEditingController(text: widget.initialTitle ?? _defaultTitleForDate(_selectedDate));
       _contentController = TextEditingController(text: widget.initialContent ?? '');
-      _currentTagsList = List<String>.from(widget.initialTags ?? []);
-      _tagsController = TextEditingController(text: _currentTagsList.join(', '));
-      _currentEmotionTags = [];
+      _tagsController = TextEditingController(text: (widget.initialTags ?? []).join(', '));
     }
+  }
+
+  String _defaultTitleForDate(DateTime date) {
+    return '오늘의 일기 (${DateFormat('yyyy.MM.dd. E', 'ko_KR').format(date)})';
   }
 
   @override
@@ -77,39 +73,75 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
 
   Future<void> _saveDiary() async {
     if (!mounted) return;
+    FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
 
-    final currentTagNames = _tagsController.text.split(',').map((e) => e.trim()).where((t) => t.isNotEmpty).toSet().toList();
+    // 태그 입력란을 쉼표로 분리해서 List<String>으로 변환
+    final currentTagNames = _tagsController.text
+        .split(',')
+        .map((e) => e.trim())
+        .where((t) => t.isNotEmpty)
+        .toSet()
+        .toList();
 
     try {
-      final List<Tag> tagsToSave = currentTagNames.map((name) => Tag(id: null, name: name)).toList();
-      final List<EmotionTag> emotionTagsToSave = List<EmotionTag>.from(_currentEmotionTags);
+      String diaryTitle = _titleController.text.trim();
+      if (diaryTitle.isEmpty) {
+        diaryTitle = _defaultTitleForDate(_selectedDate);
+      }
+      String diaryContent = _contentController.text.trim();
 
-      Diary diaryData = Diary(
+      String clientSideSummary;
+      if (widget.initialSummaryFromAI != null && widget.initialSummaryFromAI!.isNotEmpty) {
+        clientSideSummary = widget.initialSummaryFromAI!;
+      } else if (widget.diaryToEdit?.summary != null && widget.diaryToEdit!.summary.isNotEmpty) {
+        clientSideSummary = widget.diaryToEdit!.summary;
+      } else if (diaryContent.isNotEmpty) {
+        clientSideSummary = diaryContent.length > 80 ? '${diaryContent.substring(0, 80)}...' : diaryContent;
+      } else {
+        clientSideSummary = '';
+      }
+
+      final diaryDataForApi = Diary(
         id: widget.diaryToEdit?.id,
-        title: _titleController.text.trim(),
-        content: _contentController.text.trim(),
-        summary: widget.initialSummaryFromAI ?? widget.diaryToEdit?.summary ?? '',
+        title: diaryTitle,
+        content: diaryContent,
+        summary: widget.initialSummaryFromAI ?? clientSideSummary,
         createdAt: widget.diaryToEdit?.createdAt ?? _selectedDate,
         updatedAt: DateTime.now(),
-        tags: tagsToSave,
-        emotionTags: emotionTagsToSave,
+        tags: currentTagNames,
+        emotionTags: [],
       );
 
-      Diary resultDiary;
+      Diary resultDiaryFromServer;
       if (widget.diaryToEdit != null) {
-        resultDiary = await DiaryApi.instance.updateDiary(widget.diaryToEdit!.id!, diaryData);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('일기가 성공적으로 수정되었습니다!')));
+        resultDiaryFromServer = await DiaryApi.instance.updateDiary(widget.diaryToEdit!.id!, diaryDataForApi);
       } else {
-        resultDiary = await DiaryApi.instance.createDiary(diaryData);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('일기가 성공적으로 저장되었습니다!')));
+        resultDiaryFromServer = await DiaryApi.instance.createDiary(diaryDataForApi);
       }
-      if (mounted) Navigator.pop(context, resultDiary);
+
+      Diary diaryToReturn = Diary(
+        id: resultDiaryFromServer.id,
+        title: resultDiaryFromServer.title,
+        content: resultDiaryFromServer.content,
+        summary: (resultDiaryFromServer.summary.isNotEmpty)
+            ? resultDiaryFromServer.summary
+            : clientSideSummary,
+        createdAt: resultDiaryFromServer.createdAt,
+        updatedAt: resultDiaryFromServer.updatedAt,
+        tags: resultDiaryFromServer.tags,
+        emotionTags: resultDiaryFromServer.emotionTags,
+      );
+
+      if (mounted) Navigator.pop(context, diaryToReturn);
     } catch (e) {
-      print("DiaryDetailScreen: Error saving diary: $e");
       if (mounted) {
-        String displayError = "일기 저장 중 오류가 발생했습니다.";
-        // ... (오류 메시지 처리 로직)
+        String displayError = "일기 저장 중 오류가 발생했습니다. 다시 시도해주세요.";
+        if (e.toString().contains("Failed host lookup")) {
+          displayError = "서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.";
+        } else if (e.toString().toLowerCase().contains('unauthorized') || e.toString().contains('401')) {
+          displayError = "인증 오류가 발생했습니다. 다시 로그인해주세요.";
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(displayError)));
       }
     } finally {
@@ -118,17 +150,35 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    FocusScope.of(context).unfocus();
     final DateTime now = DateTime.now();
+    final DateTime firstSelectableDate = DateTime(2000);
+    DateTime initialPickerDate = _selectedDate.isAfter(now) ? now : _selectedDate;
+    if (initialPickerDate.isBefore(firstSelectableDate)) initialPickerDate = firstSelectableDate;
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate.isAfter(now) ? now : _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: now, // **미래 날짜 선택 불가 (요청사항 2)**
+      initialDate: initialPickerDate,
+      firstDate: firstSelectableDate,
+      lastDate: now,
       helpText: '일기 날짜 선택',
       cancelText: '취소',
       confirmText: '확인',
       locale: const Locale('ko', 'KR'),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColorDark,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+            dialogBackgroundColor: Colors.white,
+            buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null && picked != _selectedDate) {
@@ -139,150 +189,69 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
               (widget.initialTitle == null ||
                   _titleController.text.startsWith('오늘의 일기 (') ||
                   _titleController.text.isEmpty)) {
-            _titleController.text = '오늘의 일기 (${DateFormat('yyyy.MM.dd. E', 'ko_KR').format(_selectedDate)})';
+            _titleController.text = _defaultTitleForDate(_selectedDate);
           }
         });
       }
     }
   }
 
-  Widget _buildSectionLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, top: 16.0),
-      child: Text(label, style: TextStyle(fontSize: _labelFontSize, fontWeight: _labelFontWeight, color: _labelTextColor)),
-    );
-  }
-
-  Widget _buildCustomTextField({
-    required TextEditingController controller,
-    required String hintText,
-    int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-    bool enabled = true,
-    bool readOnly = false, // readOnly 플래그 추가
-    Widget? suffixIcon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-      decoration: BoxDecoration(
-          color: enabled ? _fieldBackgroundColor : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(8.0),
-          border: Border.all(color: Colors.grey.shade300, width: 0.5)
-      ),
-      child: TextField(
-        controller: controller,
-        enabled: enabled,
-        readOnly: readOnly, // readOnly 설정
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        style: TextStyle(fontSize: _fieldFontSize, color: Colors.black87),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: _fieldFontSize),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10.0),
-          suffixIcon: suffixIcon,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.diaryToEdit != null ? '일기 수정' : '새 일기 작성'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.only(right: 16.0),
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
-            )
-          else
-            TextButton(
+    return WillPopScope(
+      onWillPop: () async {
+        FocusScope.of(context).unfocus();
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.diaryToEdit != null ? '일기 수정' : '새 일기 작성'),
+          actions: [
+            IconButton(
+              icon: _isLoading
+                  ? const SizedBox(
+                  width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.save),
               onPressed: _isLoading ? null : _saveDiary,
-              child: Text(widget.diaryToEdit != null ? '수정' : '등록',
-                  style: TextStyle(
-                      color: Theme.of(context).appBarTheme.actionsIconTheme?.color ??
-                          (Theme.of(context).brightness == Brightness.dark ? Colors.white : Theme.of(context).primaryColor),
-                      fontSize: 16, fontWeight: FontWeight.bold)),
-              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16.0)),
+              tooltip: '저장',
             ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 40.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _buildSectionLabel('제목'),
-            _buildCustomTextField(
-              controller: _titleController,
-              hintText: '일기 제목을 입력하세요',
-            ),
-            _buildSectionLabel('날짜'),
-            // --- 날짜 선택 UI 수정 ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              decoration: BoxDecoration(
-                  color: _fieldBackgroundColor,
-                  borderRadius: BorderRadius.circular(8.0),
-                  border: Border.all(color: Colors.grey.shade300, width: 0.5)
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded( // 텍스트가 길어질 경우 아이콘 밀어내지 않도록
-                    child: Padding( // 텍스트 자체에는 패딩을 주어 클릭 영역처럼 보이지 않게
-                      padding: const EdgeInsets.symmetric(vertical: 14.0),
-                      child: Text(
-                        DateFormat('yyyy.MM.dd. EEEE', 'ko_KR').format(_selectedDate),
-                        style: TextStyle(fontSize: _fieldFontSize, color: Colors.black87),
-                      ),
-                    ),
-                  ),
-                  // **요청사항 1 반영: 달력 아이콘 클릭 시 날짜 선택**
-                  IconButton(
-                    icon: Icon(Icons.calendar_today_outlined, color: Colors.grey[600], size: 22), // 아이콘 색상 및 크기 조절
-                    padding: EdgeInsets.zero, // IconButton 기본 패딩 제거
-                    constraints: const BoxConstraints(), // IconButton 최소 크기 제한 제거
-                    tooltip: '날짜 선택',
-                    onPressed: () {
-                      _selectDate(context); // 달력 아이콘 클릭 시 _selectDate 호출
-                    },
-                  ),
-                ],
-              ),
-            ),
-            // --- 날짜 선택 UI 수정 끝 ---
-            const SizedBox(height: 24),
-            _buildSectionLabel('내용'),
-            _buildCustomTextField(
-              controller: _contentController,
-              hintText: '오늘 하루 있었던 일을 자유롭게 적어보세요...',
-              maxLines: 10,
-              keyboardType: TextInputType.multiline,
-            ),
-            _buildSectionLabel('태그'),
-            _buildCustomTextField(
-              controller: _tagsController,
-              hintText: '#감정 #오늘한일 (쉼표로 구분하여 입력)',
-            ),
-            if (widget.initialSummaryFromAI != null && widget.initialSummaryFromAI!.isNotEmpty) ...[
-              _buildSectionLabel('AI 요약 (참고용)'),
-              Container(
-                padding: const EdgeInsets.all(12.0),
-                width: double.infinity,
-                decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8.0), border: Border.all(color: Colors.blue.shade100)),
-                child: Text(widget.initialSummaryFromAI!, style: TextStyle(fontSize: 14.0, color: Colors.blue.shade800, fontStyle: FontStyle.italic, height: 1.5)),
-              ),
-            ],
-            const SizedBox(height: 30),
           ],
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 40.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const Text('제목', style: TextStyle(fontWeight: FontWeight.bold)),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(hintText: '일기 제목을 입력하세요'),
+              ),
+              const SizedBox(height: 12),
+              const Text('날짜', style: TextStyle(fontWeight: FontWeight.bold)),
+              // 날짜 입력란은 date_selector_widget.dart로 대체
+              DateSelectorWidget(
+                selectedDate: _selectedDate,
+                onDateTap: () => _selectDate(context),
+                fieldBackgroundColor: _fieldBackgroundColor,
+                fieldFontSize: _fieldFontSize,
+              ),
+              const SizedBox(height: 16),
+              const Text('내용', style: TextStyle(fontWeight: FontWeight.bold)),
+              TextField(
+                controller: _contentController,
+                maxLines: 8,
+                decoration: const InputDecoration(hintText: '오늘 하루 있었던 일을 자유롭게 적어보세요...'),
+              ),
+              const SizedBox(height: 16),
+              const Text('태그', style: TextStyle(fontWeight: FontWeight.bold)),
+              TextField(
+                controller: _tagsController,
+                decoration: const InputDecoration(hintText: '#감정 #오늘한일 (쉼표로 구분하여 입력)'),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
