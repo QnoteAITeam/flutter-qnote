@@ -32,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
   Set<DateTime> _daysWithDiaryFromApi = {};
   List<Diary> _cachedDiaries = [];
-
   bool _isLoadingPage = true;
   bool _isLoadingDiaries = false;
   String? _todayDiarySummary;
@@ -42,11 +41,13 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
   final GlobalKey _calendarWidgetKey = GlobalKey();
 
+  DateTime _add9Hours(DateTime date) => date.add(const Duration(hours: 9));
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _focusedDayForCalendar = DateTime(_today.year, _today.month, _today.day);
+    _focusedDayForCalendar = _add9Hours(DateTime(_today.year, _today.month, _today.day));
     _initializeScreenAndUserData();
   }
 
@@ -130,20 +131,14 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     String? snackBarMessageForError;
     try {
       final List<Diary> fetchedDiaries = await DiaryApi.instance.getRecentDiaries(150);
-      print('[FETCHED DIARIES] Count: ${fetchedDiaries.length}');
-      for (final diary in fetchedDiaries) {
-        print(' - Diary ID: ${diary.id}, Title: ${diary.title}, Summary: ${diary.summary}');
-      }
       _cachedDiaries = fetchedDiaries;
       _initialDiariesFetchAttempted = true;
-      // 🔥 반드시 toLocal()로 변환해서 KST 기준으로 저장
       _daysWithDiaryFromApi = fetchedDiaries
           .where((diary) => diary.createdAt != null)
           .map((diary) {
-        final local = diary.createdAt!.toLocal();
-        return DateTime(local.year, local.month, local.day);
-      })
-          .toSet();
+        final plus9 = diary.createdAt!.add(const Duration(hours: 9));
+        return DateTime(plus9.year, plus9.month, plus9.day);
+      }).toSet();
       if (mounted) {
         setState(() {
           _updateWeeklyFlameCount();
@@ -175,22 +170,20 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
   void _updateTodaySummaryAndStatus() {
     Diary? todayDiary;
-    final now = DateTime.now();
+    final now = DateTime.now().add(const Duration(hours: 9));
     final todayDateOnly = DateTime(now.year, now.month, now.day);
     bool foundTodayDiary = false;
 
     if (_cachedDiaries.isNotEmpty) {
-      // 최신순(내림차순)으로 정렬
       final sorted = List<Diary>.from(_cachedDiaries)
         ..sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
       for (final diary in sorted) {
         if (diary.createdAt != null) {
-          final diaryDateLocal = diary.createdAt!.toLocal();
-          final diaryDateOnly = DateTime(diaryDateLocal.year, diaryDateLocal.month, diaryDateLocal.day);
+          final diaryDatePlus9 = diary.createdAt!.add(const Duration(hours: 9));
+          final diaryDateOnly = DateTime(diaryDatePlus9.year, diaryDatePlus9.month, diaryDatePlus9.day);
           if (diaryDateOnly.isAtSameMomentAs(todayDateOnly)) {
             todayDiary = diary;
             foundTodayDiary = true;
-            print('[TODAY DIARY FOUND] ID: ${diary.id}, Summary: ${diary.summary}');
             break;
           }
         }
@@ -210,7 +203,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   }
 
   void _updateWeeklyFlameCount() {
-    final now = DateTime.now();
+    final now = DateTime.now().add(const Duration(hours: 9));
     final startOfWeek = now.subtract(Duration(days: now.weekday - DateTime.monday));
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
     int count = 0;
@@ -227,8 +220,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       Diary? tappedDiary;
       for (var diary in _cachedDiaries) {
         if (diary.createdAt != null) {
-          final diaryDateLocal = diary.createdAt!.toLocal();
-          final diaryDateOnly = DateTime(diaryDateLocal.year, diaryDateLocal.month, diaryDateLocal.day);
+          final diaryDatePlus9 = diary.createdAt!.add(const Duration(hours: 9));
+          final diaryDateOnly = DateTime(diaryDatePlus9.year, diaryDatePlus9.month, diaryDatePlus9.day);
           if (_isSameDay(diaryDateOnly, details.date)) {
             tappedDiary = diary; break;
           }
@@ -313,8 +306,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     padding: const EdgeInsets.only(bottom:8),
                     child: CalendarWidget(
                       focusedDayForCalendar: _focusedDayForCalendar,
-                      today: DateTime(_today.year, _today.month, _today.day),
-                      daysWithDiary: const {},
+                      today: _add9Hours(DateTime(_today.year, _today.month, _today.day)),
+                      daysWithDiary: _daysWithDiaryFromApi,
                       onDateTap: _handleCalendarDateTap,
                       onPageChanged: (newFocusedPageDate) {
                         if (mounted) {
@@ -362,7 +355,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             child: DiarySummarySectionWidget(
               calendarWidgetKey: _calendarWidgetKey,
               focusedDayForCalendar: _focusedDayForCalendar,
-              today: DateTime(_today.year, _today.month, _today.day),
+              today: _add9Hours(DateTime(_today.year, _today.month, _today.day)),
               daysWithDiary: _daysWithDiaryFromApi,
               weeklyFlameCount: _weeklyFlameCount,
               todayDiarySummary: _todayDiarySummary,
@@ -415,53 +408,112 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         backgroundColor: const Color(0xFFF4F6F8),
         appBar: currentAppBar,
         body: IndexedStack(index: _currentIndex, children: currentTabScreens),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
+        bottomNavigationBar: _CustomBottomNavBar(
           currentIndex: _currentIndex,
-          selectedItemColor: Colors.black,
-          unselectedItemColor: Colors.grey.shade500,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-          unselectedLabelStyle: const TextStyle(fontSize: 10),
-          onTap: (idx) async {
-            if (!mounted) return;
-            if (_currentIndex != idx) FocusScope.of(context).unfocus();
-
-            bool needsRefreshForHome = false;
-            if (idx == 0) needsRefreshForHome = true;
-            if (mounted) setState(() => _currentIndex = idx);
-            if (needsRefreshForHome) {
-              await _initializeScreenAndUserData(forceRefresh: true);
-            } else if (idx != 0 && !_isUserAuthenticated) {
-              String featureName = '';
-              switch (idx) {
-                case 1: featureName = '검색'; break;
-                case 2: featureName = 'AI 채팅'; break;
-                case 3: featureName = '일정'; break;
-                case 4: featureName = '프로필'; break;
-              }
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$featureName을(를) 이용하려면 로그인이 필요합니다.')));
-                final loginSuccess = await Navigator.push<bool>(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
-                if (loginSuccess == true && mounted) {
-                  await _initializeScreenAndUserData(forceRefresh: true);
-                  if (_isUserAuthenticated && idx != 0) {
-                    if (mounted) setState(() => _currentIndex = idx);
-                  } else {
-                    if (mounted) setState(() => _currentIndex = 0);
-                  }
-                } else {
-                  if (mounted) setState(() => _currentIndex = 0);
-                }
-              }
+          onTap: (idx) {
+            if (idx == 0) {
+              setState(() => _currentIndex = 0);
+              _initializeScreenAndUserData(forceRefresh: true); // 홈 새로고침 시 일기 갱신
+            } else if (idx == 2) {
+              setState(() => _currentIndex = 2); // 채팅화면 이동
+            } else {
+              setState(() => _currentIndex = idx);
             }
           },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '홈'),
-            BottomNavigationBarItem(icon: Icon(Icons.search), label: '검색'),
-            BottomNavigationBarItem(icon: CircleAvatar(backgroundColor: Color(0xFFB59A7B), child: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 26)), label: 'AI 채팅'),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), label: '일정'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: '프로필'),
+        ),
+        floatingActionButton: MediaQuery.of(context).viewInsets.bottom == 0 && _currentIndex != 2
+          ? FloatingActionButton(
+          backgroundColor: const Color(0xFFB59A7B),
+          elevation: 2,
+          onPressed: () {
+            setState(() => _currentIndex = 2); // 채팅화면 이동
+          },
+          child: const Icon(Icons.edit, color: Colors.white, size: 32),
+          shape: const CircleBorder(),
+        )
+        : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
+    );
+  }
+}
+
+class _CustomBottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  const _CustomBottomNavBar({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      color: Colors.white,
+      elevation: 8,
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8,
+      child: SizedBox(
+        height: 48, // 얇게
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavItem(
+              icon: Icons.home_filled,
+              label: '홈',
+              selected: currentIndex == 0,
+              onTap: () => onTap(0),
+            ),
+            _NavItem(
+              icon: Icons.search,
+              label: '검색',
+              selected: currentIndex == 1,
+              onTap: () => onTap(1),
+            ),
+            const SizedBox(width: 48), // 플로팅 버튼 자리
+            _NavItem(
+              icon: Icons.calendar_today_outlined,
+              label: '일정',
+              selected: currentIndex == 3,
+              onTap: () => onTap(3),
+            ),
+            _NavItem(
+              icon: Icons.person_outline,
+              label: '프로필',
+              selected: currentIndex == 4,
+              onTap: () => onTap(4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? Colors.black : Colors.grey.shade500;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 52,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 1),
+            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
           ],
         ),
       ),

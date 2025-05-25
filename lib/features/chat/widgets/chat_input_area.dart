@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 
 class ChatInputArea extends StatelessWidget {
   final TextEditingController textController;
+  final FocusNode? focusNode;
   final VoidCallback onSendPressed;
   final VoidCallback onAttachPressed;
 
   const ChatInputArea({
     Key? key,
     required this.textController,
+    required this.focusNode,
     required this.onSendPressed,
     required this.onAttachPressed,
   }) : super(key: key);
@@ -35,6 +37,8 @@ class ChatInputArea extends StatelessWidget {
                 decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(25.0)),
                 child: TextField(
                   controller: textController,
+                  focusNode: focusNode,
+                  autofocus: false,
                   decoration: InputDecoration(
                     hintText: '자유롭게 답변하기',
                     hintStyle: TextStyle(color: Colors.grey[500]),

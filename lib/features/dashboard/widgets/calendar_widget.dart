@@ -1,9 +1,7 @@
-// lib/widgets/calendar_widget.dart
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/intl.dart'; // DateFormat 사용
+import 'package:intl/intl.dart';
 
-// DateTapDetails 클래스는 변경 없음
 class DateTapDetails {
   final DateTime date;
   final bool hasEvent;
@@ -36,24 +34,40 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   late DateTime _focusedDayInternal;
   final List<String> _koreanWeekdays = ["월", "화", "수", "목", "금", "토", "일"];
 
+  DateTime _add9Hours(DateTime date) => date.add(const Duration(hours: 9));
+
+  // 날짜를 UTC+9로 변환한 뒤, 반드시 시간 0시로 맞춰주는 함수
+  DateTime _toKstZero(DateTime date) {
+    final plus9 = date.add(const Duration(hours: 9));
+    return DateTime(plus9.year, plus9.month, plus9.day); // KST 0시
+  }
+
   @override
   void initState() {
     super.initState();
-    _focusedDayInternal = DateTime(widget.focusedDayForCalendar.year, widget.focusedDayForCalendar.month, widget.focusedDayForCalendar.day);
+    _focusedDayInternal = _toKstZero(DateTime(
+      widget.focusedDayForCalendar.year,
+      widget.focusedDayForCalendar.month,
+      widget.focusedDayForCalendar.day,
+    ));
   }
 
   @override
   void didUpdateWidget(covariant CalendarWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final newFocusedDayLocal = DateTime(widget.focusedDayForCalendar.year, widget.focusedDayForCalendar.month, widget.focusedDayForCalendar.day);
-    if (!isSameDay(newFocusedDayLocal, _focusedDayInternal)) {
-      _focusedDayInternal = newFocusedDayLocal;
+    final newFocusedDay = _toKstZero(DateTime(
+      widget.focusedDayForCalendar.year,
+      widget.focusedDayForCalendar.month,
+      widget.focusedDayForCalendar.day,
+    ));
+    if (!isSameDay(newFocusedDay, _focusedDayInternal)) {
+      _focusedDayInternal = newFocusedDay;
     }
   }
 
   bool _isEnabledDay(DateTime day) {
-    final normalizedToday = DateTime(widget.today.year, widget.today.month, widget.today.day);
-    final normalizedDay = DateTime(day.year, day.month, day.day);
+    final normalizedToday = _toKstZero(DateTime(widget.today.year, widget.today.month, widget.today.day));
+    final normalizedDay = _toKstZero(DateTime(day.year, day.month, day.day));
     return !normalizedDay.isAfter(normalizedToday);
   }
 
@@ -92,16 +106,19 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             );
           },
           defaultBuilder: (context, day, focusedDay) {
-            final dayLocal = DateTime(day.year, day.month, day.day);
-            final todayLocal = DateTime(widget.today.year, widget.today.month, widget.today.day);
-            final isToday = isSameDay(dayLocal, todayLocal);
-            final hasEvent = widget.daysWithDiary.contains(dayLocal);
+            final dayKstZero = _toKstZero(DateTime(day.year, day.month, day.day));
+            final todayKstZero = _toKstZero(DateTime(widget.today.year, widget.today.month, widget.today.day));
+            final isToday = isSameDay(dayKstZero, todayKstZero);
+            final hasEvent = widget.daysWithDiary.contains(dayKstZero);
             final isEnabled = _isEnabledDay(day);
+
+            print('[DEBUG] CalendarWidget dayKstZero: $dayKstZero, hasEvent: $hasEvent, daysWithDiary: ${widget.daysWithDiary}');
+
             return _buildCustomCell(context, day, hasEvent, isToday, isEnabled, false);
           },
           todayBuilder: (context, day, focusedDay) {
-            final dayLocal = DateTime(day.year, day.month, day.day);
-            final hasEvent = widget.daysWithDiary.contains(dayLocal);
+            final dayKstZero = _toKstZero(DateTime(day.year, day.month, day.day));
+            final hasEvent = widget.daysWithDiary.contains(dayKstZero);
             return _buildCustomCell(context, day, hasEvent, true, true, false);
           },
           disabledBuilder: (context, day, focusedDay) {
@@ -113,60 +130,54 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         ),
         enabledDayPredicate: _isEnabledDay,
         onDaySelected: (selectedDay, focusedDay) {
-          final focusedDayLocal = DateTime(focusedDay.year, focusedDay.month, focusedDay.day);
-          if (!isSameDay(_focusedDayInternal, focusedDayLocal)) {
-            setState(() { _focusedDayInternal = focusedDayLocal; });
+          final focusedDayKstZero = _toKstZero(DateTime(focusedDay.year, focusedDay.month, focusedDay.day));
+          if (!isSameDay(_focusedDayInternal, focusedDayKstZero)) {
+            setState(() { _focusedDayInternal = focusedDayKstZero; });
           }
-          _handleDayCellTap(DateTime(selectedDay.year, selectedDay.month, selectedDay.day));
+          _handleDayCellTap(_toKstZero(DateTime(selectedDay.year, selectedDay.month, selectedDay.day)));
         },
         onPageChanged: (focusedDay) {
-          final focusedDayLocal = DateTime(focusedDay.year, focusedDay.month, focusedDay.day);
-          setState(() { _focusedDayInternal = focusedDayLocal; });
-          widget.onPageChanged?.call(focusedDayLocal);
+          final focusedDayKstZero = _toKstZero(DateTime(focusedDay.year, focusedDay.month, focusedDay.day));
+          setState(() { _focusedDayInternal = focusedDayKstZero; });
+          widget.onPageChanged?.call(focusedDayKstZero);
         },
       ),
     );
   }
 
-  // image.png UI를 따르는 커스텀 셀 빌더 (문제 1-1 테두리 추가)
   Widget _buildCustomCell(BuildContext context, DateTime day, bool hasEvent, bool isToday, bool isEnabled, bool isOutside) {
     Color circleColor;
     Border? circleBorder;
     Widget? iconContent;
 
-    if (isOutside) { // 현재 달력이 아닌 날짜
+    if (isOutside) {
       circleColor = Colors.grey.shade200.withOpacity(0.5);
-    } else if (!isEnabled) { // 미래 날짜 (비활성화)
+    } else if (!isEnabled) {
       circleColor = Colors.grey.shade200.withOpacity(0.7);
-    } else { // 활성화된 날짜 (과거 또는 오늘)
+    } else {
       if (hasEvent) {
-        // 일기가 있으면 배경을 노란색 계열로 변경
-        circleColor = Colors.yellow.shade100; // 예: 연한 노란색
+        circleColor = Colors.yellow.shade100;
         iconContent = Icon(
           Icons.local_fire_department,
           color: Colors.deepOrangeAccent,
           size: 20,
         );
-        // 오늘이 아닌데 일기가 있는 경우, 테두리 추가 (요청 사항 1-1)
         if (!isToday) {
-          circleBorder = Border.all(color: Colors.orangeAccent.withOpacity(0.7), width: 1.5); // 예: 연한 주황색 테두리
+          circleBorder = Border.all(color: Colors.orangeAccent.withOpacity(0.7), width: 1.5);
         }
       } else {
-        // 일기가 없으면 기본 회색 동그라미
         circleColor = Colors.grey.shade300;
       }
 
       if (isToday) {
-        // 오늘 날짜는 항상 더 굵고 명확한 테두리로 강조 (기존 테두리 덮어씀)
         circleBorder = Border.all(color: Colors.orange.shade700, width: 2);
-        // 오늘이면서 일기가 없을 때의 배경색은 hasEvent 조건에서 이미 처리됨 (회색)
-        // 만약 오늘+일기없음 일때도 노란 배경을 원한다면, 이 if 블록 안에서 circleColor를 다시 설정
-        // 예: if (isToday && !hasEvent) circleColor = Colors.yellow.shade50;
       }
     }
 
     return GestureDetector(
-      onTap: () => isEnabled && !isOutside ? _handleDayCellTap(DateTime(day.year, day.month, day.day)) : null,
+      onTap: () => isEnabled && !isOutside
+          ? _handleDayCellTap(_toKstZero(DateTime(day.year, day.month, day.day)))
+          : null,
       child: Container(
         margin: const EdgeInsets.all(5.0),
         width: 36,
@@ -174,16 +185,17 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: circleColor,
-          border: circleBorder, // 설정된 테두리 적용
+          border: circleBorder,
         ),
         child: Center(child: iconContent),
       ),
     );
   }
 
-  void _handleDayCellTap(DateTime tappedDayLocal) {
-    final bool hasEvent = widget.daysWithDiary.contains(tappedDayLocal);
-    widget.onDateTap?.call(DateTapDetails(date: tappedDayLocal, hasEvent: hasEvent));
+  void _handleDayCellTap(DateTime tappedDayKstZero) {
+    final bool hasEvent = widget.daysWithDiary.contains(tappedDayKstZero);
+    print('[DEBUG] _handleDayCellTap tappedDayKstZero: $tappedDayKstZero, hasEvent: $hasEvent');
+    widget.onDateTap?.call(DateTapDetails(date: tappedDayKstZero, hasEvent: hasEvent));
   }
 
   bool isSameDay(DateTime? a, DateTime? b) {

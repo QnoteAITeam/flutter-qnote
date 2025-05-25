@@ -24,6 +24,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _chatFocusNode = FocusNode();
 
   bool _isCreatingSession = true;
   bool _isAiResponding = false;
@@ -47,10 +48,14 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _initializeChatSession();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).unfocus();
+    });
   }
 
   @override
   void dispose() {
+    _chatFocusNode.dispose();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -246,6 +251,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     if (!mounted) return;
+    _chatFocusNode.unfocus();
     FocusScope.of(context).unfocus();
 
     if (savedDiary != null) {
@@ -287,6 +293,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             ChatInputArea(
               textController: _textController,
+              focusNode: _chatFocusNode,
               onSendPressed: _onPressedSendButton,
               onAttachPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('첨부 기능은 준비 중입니다.')));

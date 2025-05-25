@@ -33,7 +33,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   late DateTime _selectedDate;
   bool _isLoading = false;
 
-  static const Color _fieldBackgroundColor = Color(0xFFF5F5F5);
+  static const Color _fieldBackgroundColor = Colors.white;
   static const double _fieldFontSize = 15.0;
 
   @override
@@ -47,7 +47,6 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
       final diary = widget.diaryToEdit!;
       _titleController = TextEditingController(text: diary.title);
       _contentController = TextEditingController(text: diary.content);
-      // 기존 일기의 tags, emotionTags를 모두 합쳐서 표시
       final allTags = [...diary.tags, ...diary.emotionTags];
       _tagsController = TextEditingController(text: allTags.join(', '));
       _selectedDate = diary.createdAt ?? diary.updatedAt ?? DateTime.now();
@@ -60,7 +59,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   }
 
   String _defaultTitleForDate(DateTime date) {
-    return '오늘의 일기 (${DateFormat('yyyy.MM.dd. E', 'ko_KR').format(date)})';
+    return '오늘의 일기 (${DateFormat('MM.dd', 'ko_KR').format(date)})';
   }
 
   @override
@@ -76,7 +75,6 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
 
-    // 태그 입력란을 쉼표로 분리해서 List<String>으로 변환
     final currentTagNames = _tagsController.text
         .split(',')
         .map((e) => e.trim())
@@ -205,54 +203,133 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.diaryToEdit != null ? '일기 수정' : '새 일기 작성'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          centerTitle: true,
+          title: Text(widget.diaryToEdit != null ? '일기 수정' : '일기 저장',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              FocusScope.of(context).unfocus();
+              Navigator.pop(context);
+            },
+          ),
           actions: [
             IconButton(
               icon: _isLoading
-                  ? const SizedBox(
-                  width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.save),
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.save_alt_rounded, color: Color(0xFFB59A7B)),
               onPressed: _isLoading ? null : _saveDiary,
               tooltip: '저장',
             ),
           ],
         ),
+        backgroundColor: const Color(0xFFF4F6F8),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 40.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              const Text('제목', style: TextStyle(fontWeight: FontWeight.bold)),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionLabel('제목'),
               TextField(
                 controller: _titleController,
-                decoration: const InputDecoration(hintText: '일기 제목을 입력하세요'),
+                decoration: const InputDecoration(
+                  hintText: '제목을 입력해주세요.',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)), // 테두리 얇게
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(width: 1.1, color: Color(0xFFB59A7B)), // 포커스시 살짝 진하게
+                  ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  isDense: true,
+                ),
+                style: const TextStyle(fontSize: 15),
               ),
-              const SizedBox(height: 12),
-              const Text('날짜', style: TextStyle(fontWeight: FontWeight.bold)),
-              // 날짜 입력란은 date_selector_widget.dart로 대체
+              const SizedBox(height: 18),
+              const _SectionLabel('날짜'),
+              // 날짜 입력란: 텍스트 클릭 시 달력 안 뜨고, 아이콘 클릭 시에만 뜸
               DateSelectorWidget(
                 selectedDate: _selectedDate,
                 onDateTap: () => _selectDate(context),
                 fieldBackgroundColor: _fieldBackgroundColor,
                 fieldFontSize: _fieldFontSize,
               ),
-              const SizedBox(height: 16),
-              const Text('내용', style: TextStyle(fontWeight: FontWeight.bold)),
-              TextField(
-                controller: _contentController,
-                maxLines: 8,
-                decoration: const InputDecoration(hintText: '오늘 하루 있었던 일을 자유롭게 적어보세요...'),
+              const SizedBox(height: 18),
+              const _SectionLabel('내용'),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: TextField(
+                  controller: _contentController,
+                  maxLines: 10,
+                  minLines: 5,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: '오늘 하루 있었던 일을 자유롭게 적어보세요...',
+                  ),
+                  style: const TextStyle(fontSize: 15, color: Colors.black87),
+                ),
               ),
-              const SizedBox(height: 16),
-              const Text('태그', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 18),
+              const _SectionLabel('태그'),
               TextField(
                 controller: _tagsController,
-                decoration: const InputDecoration(hintText: '#감정 #오늘한일 (쉼표로 구분하여 입력)'),
+                decoration: const InputDecoration(
+                  hintText: '#감정 #오늘한일 (쉼표로 구분하여 입력)',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(width: 1.1, color: Color(0xFFB59A7B)),
+        ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  isDense: true,
+                ),
+                style: const TextStyle(fontSize: 15),
               ),
               const SizedBox(height: 30),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0, left: 2),
+      child: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
       ),
     );
   }
