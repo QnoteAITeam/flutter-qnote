@@ -176,7 +176,7 @@ class ApiService {
   }
 
   //파라미터로 다이어리의 내용을 주면 api서버에 호출 해서, 알아 내 옵니다.
-  Future<GetDiaryInfoDto> getDiaryInfoByContent(String content) async {
+  Future<FetchDiaryResponseDto> getDiaryInfoByContent(String content) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.post(
@@ -189,7 +189,7 @@ class ApiService {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return GetDiaryInfoDto.fromJson(jsonDecode(response.body));
+      return FetchDiaryResponseDto.fromJson(jsonDecode(response.body));
     } else {
       throw new Exception('Get Diary Info By Content, 요약을 가져오던 중 문제가 생겼습니다.');
     }
