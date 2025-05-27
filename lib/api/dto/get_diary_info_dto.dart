@@ -1,22 +1,34 @@
 class FetchDiaryResponseDto {
+  final int id;
   final String title;
   final String content;
   final List<String> tags;
   final List<String> emotionTags;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String summary;
 
   FetchDiaryResponseDto({
+    required this.id,
     required this.title,
     required this.content,
     required this.tags,
     required this.emotionTags,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.summary,
   });
 
   factory FetchDiaryResponseDto.fromJson(Map<String, dynamic> json) {
     return FetchDiaryResponseDto(
+      id: json['id'] as int,
       title: json['title'] as String,
       content: json['content'] as String,
       tags: List<String>.from(json['tags'] ?? []),
       emotionTags: List<String>.from(json['emotionTags'] ?? []),
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+      summary: json['summary'] as String,
     );
   }
 
