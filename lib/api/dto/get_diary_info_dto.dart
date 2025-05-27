@@ -43,10 +43,14 @@ class FetchDiaryResponseDto {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
       'content': content,
       'tags': tags,
       'emotionTags': emotionTags,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'summary': summary,
     };
   }
 }
