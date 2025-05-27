@@ -24,7 +24,11 @@ class FetchDiaryResponseDto {
       id: json['id'] as int,
       title: json['title'] as String,
       content: json['content'] as String,
-      tags: List<String>.from(json['tags'] ?? []),
+      tags: (json['tags'] is List)
+          ? List<String>.from(json['tags'])
+          : (json['tags'] is String)
+          ? (json['tags'] as String).split(RegExp(r'[,\s]+')).where((t) => t.isNotEmpty).toList()
+          : [],
       emotionTags: List<String>.from(json['emotionTags'] ?? []),
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
