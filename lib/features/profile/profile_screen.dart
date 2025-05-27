@@ -1,5 +1,8 @@
 // lib/features/profile/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_qnote/features/profile/profile_edit_screen.dart';
+import 'package:flutter_qnote/features/profile/setting_screen.dart';
+import 'package:flutter_qnote/features/profile/customer_support_screen.dart';
 import 'package:flutter_qnote/auth/auth_api.dart'; // AuthApi 경로 확인
 import 'package:flutter_qnote/features/login/login_screen.dart'; // LoginScreen 경로 확인
 // import 'package:flutter_qnote/models/user.dart'; // 실제 User 모델 경로 확인 (필요시)
@@ -103,8 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('프로필 수정 기능은 준비 중입니다.')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileEditScreen()),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -176,8 +180,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.settings_outlined,
                   title: '설정',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('설정 기능은 준비 중입니다.')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SettingScreen()),
                     );
                   },
                 ),
@@ -186,8 +191,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.headset_mic_outlined,
                   title: '고객센터',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('고객센터 기능은 준비 중입니다.')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CustomerSupportScreen()),
                     );
                   },
                 ),
