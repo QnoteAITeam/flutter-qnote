@@ -70,7 +70,8 @@ class _ChatScreenState extends State<ChatScreen> {
     setStateIfMounted(() => _isCreatingSession = true);
 
     try {
-      final ChatSession newSession = await ApiService.getInstance.createNewSession();
+      final ChatSession newSession =
+          await ApiService.getInstance.createNewSession();
       if (mounted) {
         _currentSession = newSession;
         if (_chatMessages.isEmpty) {
@@ -84,19 +85,23 @@ class _ChatScreenState extends State<ChatScreen> {
           );
           setStateIfMounted(() {
             _currentChatOptions = [
-              '오늘 아침으로 샐러드 먹었어', '간단하게 시리얼 먹었어',
-              '시간이 없어서 아침을 안먹었어', '글쎄, 딱히 기억이 안나네',
+              '오늘 아침으로 샐러드 먹었어',
+              '간단하게 시리얼 먹었어',
+              '시간이 없어서 아침을 안먹었어',
+              '글쎄, 딱히 기억이 안나네',
             ];
           });
         }
       }
     } catch (_) {
       if (mounted) {
-        _chatMessages.add(SendMessageDto(
-          role: MessageRole.system,
-          state: MessageState.done,
-          message: "채팅 세션을 시작하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-        ));
+        _chatMessages.add(
+          SendMessageDto(
+            role: MessageRole.system,
+            state: MessageState.done,
+            message: "채팅 세션을 시작하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -124,7 +129,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final String trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
     if (_currentSession == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('채팅 세션이 활성화되지 않았습니다.')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('채팅 세션이 활성화되지 않았습니다.')));
       return;
     }
 
@@ -142,7 +150,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!isFromOption) _textController.clear();
 
     try {
-      final SendMessageDto aiResponse = await ApiService.getInstance.sendMessageToAI(trimmedText);
+      final SendMessageDto aiResponse = await ApiService.getInstance
+          .sendMessageToAI(trimmedText);
       if (mounted) {
         _processAiResponse(aiResponse);
         setStateIfMounted(() {
@@ -150,7 +159,11 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!_showAskingZeroDiaryButton &&
               aiResponse.askingNumericValue != null &&
               aiResponse.askingNumericValue != 0) {
-            _currentChatOptions = ['네, 다음 질문해주세요.', '아니요, 더 할 말 없어요.', '음... 잠시만요.'];
+            _currentChatOptions = [
+              '네, 다음 질문해주세요.',
+              '아니요, 더 할 말 없어요.',
+              '음... 잠시만요.',
+            ];
           } else {
             _currentChatOptions = [];
           }
@@ -158,11 +171,13 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (_) {
       if (mounted) {
-        _chatMessages.add(SendMessageDto(
-          role: MessageRole.assistance,
-          state: MessageState.done,
-          message: "죄송합니다, AI와 대화 중 문제가 발생했습니다.",
-        ));
+        _chatMessages.add(
+          SendMessageDto(
+            role: MessageRole.assistance,
+            state: MessageState.done,
+            message: "죄송합니다, AI와 대화 중 문제가 발생했습니다.",
+          ),
+        );
         setStateIfMounted(() {
           _isAiResponding = false;
           _showAskingZeroDiaryButton = false;
@@ -189,8 +204,8 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    if (aiMessage.askingNumericValue == 0 && aiMessage.state == MessageState.done) {
-
+    if (aiMessage.askingNumericValue == 0 &&
+        aiMessage.state == MessageState.done) {
       print('[DEBUG] suggestedTags: ${aiMessage.suggestedTags}');
       print('[DEBUG] suggestedEmotionTags: ${aiMessage.suggestedEmotionTags}');
 
@@ -199,18 +214,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
       List<String> allSuggestedTags = [
         ...aiMessage.suggestedTags,
-        ...aiMessage.suggestedEmotionTags
+        ...aiMessage.suggestedEmotionTags,
       ];
-      List<String> finalUniqueTags = allSuggestedTags
-          .where((tag) => tag.isNotEmpty)
-          .toSet()
-          .toList();
+      List<String> finalUniqueTags =
+          allSuggestedTags.where((tag) => tag.isNotEmpty).toSet().toList();
 
       print('[DEBUG] 최종 태그: $finalUniqueTags');
 
       setStateIfMounted(() {
         _diarySummaryForButton = finalSummary;
-        _diaryTitleForButton = finalTitle ?? '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
+        _diaryTitleForButton =
+            finalTitle ??
+            '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
         _diaryTagsForButton = finalUniqueTags;
         _showAskingZeroDiaryButton = true;
       });
@@ -234,19 +249,32 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // DiaryDetailScreen 호출 시 initialTags에 _diaryTagsForButton 전달
   void _navigateToDiaryDetailScreen() async {
-    if (!_showAskingZeroDiaryButton || _diarySummaryForButton == null || !mounted) return;
+    if (!_showAskingZeroDiaryButton ||
+        _diarySummaryForButton == null ||
+        !mounted)
+      return;
     FocusScope.of(context).unfocus();
+
+    final diaryMetaData = await ApiService.getInstance.getDiaryInfoByContent(
+      _chatMessages.last.message,
+    );
 
     final Diary? savedDiary = await Navigator.push<Diary>(
       context,
       MaterialPageRoute(
-        builder: (context) => DiaryDetailScreen(
-          initialTitle: _diaryTitleForButton,
-          initialContent: _diarySummaryForButton!,
-          initialSummaryFromAI: _diarySummaryForButton,
-          initialTags: _diaryTagsForButton,
-          initialDate: DateTime.now(),
-        ),
+        builder:
+            (context) => DiaryDetailScreen(
+              // initialTitle: _diaryTitleForButton,
+              // initialContent: _diarySummaryForButton!,
+              // initialSummaryFromAI: _diarySummaryForButton,
+              // initialTags: _diaryTagsForButton,
+              initialTitle: diaryMetaData.title,
+              initialContent: diaryMetaData.content,
+
+              // initialSummaryFromAI: _diarySummaryForButton,
+              initialTags: diaryMetaData.tags,
+              initialDate: DateTime.now(),
+            ),
       ),
     );
 
@@ -260,11 +288,13 @@ class _ChatScreenState extends State<ChatScreen> {
         _diarySummaryForButton = null;
         _diaryTagsForButton = [];
         _currentChatOptions = [];
-        _chatMessages.add(SendMessageDto(
-          role: MessageRole.assistance,
-          state: MessageState.done,
-          message: "AI가 요약하여 일기를 저장했어요! 이용해줘서 고마워요! 🎉",
-        ));
+        _chatMessages.add(
+          SendMessageDto(
+            role: MessageRole.assistance,
+            state: MessageState.done,
+            message: "AI가 요약하여 일기를 저장했어요! 이용해줘서 고마워요! 🎉",
+          ),
+        );
       });
       _scrollToBottom();
     } else {
@@ -278,29 +308,40 @@ class _ChatScreenState extends State<ChatScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: ChatAppBar(onInfoPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('AI 챗봇 정보 버튼 (기능 준비 중)')));
-        }),
-        body: _isCreatingSession
-            ? const Center(child: CircularProgressIndicator(key: ValueKey("chat_session_loading")))
-            : Column(
-          children: [
-            Expanded(child: _buildChatList()),
-            ChatOptionsArea(
-              options: _currentChatOptions,
-              isAiResponding: _isAiResponding,
-              onOptionTapped: _onOptionTapped,
-            ),
-            ChatInputArea(
-              textController: _textController,
-              focusNode: _chatFocusNode,
-              onSendPressed: _onPressedSendButton,
-              onAttachPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('첨부 기능은 준비 중입니다.')));
-              },
-            ),
-          ],
+        appBar: ChatAppBar(
+          onInfoPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('AI 챗봇 정보 버튼 (기능 준비 중)')),
+            );
+          },
         ),
+        body:
+            _isCreatingSession
+                ? const Center(
+                  child: CircularProgressIndicator(
+                    key: ValueKey("chat_session_loading"),
+                  ),
+                )
+                : Column(
+                  children: [
+                    Expanded(child: _buildChatList()),
+                    ChatOptionsArea(
+                      options: _currentChatOptions,
+                      isAiResponding: _isAiResponding,
+                      onOptionTapped: _onOptionTapped,
+                    ),
+                    ChatInputArea(
+                      textController: _textController,
+                      focusNode: _chatFocusNode,
+                      onSendPressed: _onPressedSendButton,
+                      onAttachPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('첨부 기능은 준비 중입니다.')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -309,7 +350,10 @@ class _ChatScreenState extends State<ChatScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16.0),
-      itemCount: _chatMessages.length + (_isAiResponding ? 1 : 0) + (_showAskingZeroDiaryButton && !_isAiResponding ? 1 : 0),
+      itemCount:
+          _chatMessages.length +
+          (_isAiResponding ? 1 : 0) +
+          (_showAskingZeroDiaryButton && !_isAiResponding ? 1 : 0),
       itemBuilder: (context, index) {
         int messageBoundary = _chatMessages.length;
         int potentialButtonIndex = messageBoundary + (_isAiResponding ? 1 : 0);
@@ -317,11 +361,16 @@ class _ChatScreenState extends State<ChatScreen> {
         if (_isAiResponding && index == messageBoundary) {
           return const ShimmerLoadingBubble(smallAiAvatar: smallAiAvatar);
         }
-        if (_showAskingZeroDiaryButton && !_isAiResponding && index == potentialButtonIndex) {
+        if (_showAskingZeroDiaryButton &&
+            !_isAiResponding &&
+            index == potentialButtonIndex) {
           return SaveDiaryWidget(onPressed: _navigateToDiaryDetailScreen);
         }
         if (index < _chatMessages.length) {
-          return ChatMessageBubble(messageDto: _chatMessages[index], smallAiAvatar: smallAiAvatar);
+          return ChatMessageBubble(
+            messageDto: _chatMessages[index],
+            smallAiAvatar: smallAiAvatar,
+          );
         }
         return const SizedBox.shrink();
       },

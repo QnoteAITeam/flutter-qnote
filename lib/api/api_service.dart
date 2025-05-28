@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/api/dto/get_diary_info_dto.dart';
+import 'package:flutter_qnote/api/dto/get_diary_metadata_dto.dart';
 import 'package:flutter_qnote/api/dto/send_message_dto.dart';
 import 'package:flutter_qnote/auth/auth_api.dart';
 import 'package:flutter_qnote/models/chat_message.dart';
@@ -29,6 +30,8 @@ class ApiService {
   }
 
   Future<List<ChatSession>> getAllSessions() async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse('$baseUrl/sessions'),
       headers: {
@@ -44,6 +47,8 @@ class ApiService {
   }
 
   Future<List<ChatSession>> getRecentSessions(int count) async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse('$baseUrl/sessions/recent?count=$count'),
       headers: {
@@ -59,6 +64,8 @@ class ApiService {
   }
 
   Future<ChatSession> getMostSession() async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse('$baseUrl/sessions/latest'),
       headers: {
@@ -70,6 +77,8 @@ class ApiService {
   }
 
   Future<ChatSession> createNewSession() async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.post(
       Uri.parse('$baseUrl/sessions'),
       headers: {
@@ -84,6 +93,8 @@ class ApiService {
   }
 
   getAllMessagesBySession(int sessionId) async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse('$baseUrl/chat-messages/session/$sessionId'),
       headers: {
@@ -102,6 +113,8 @@ class ApiService {
     int sessionId,
     int limit,
   ) async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse(
         '$baseUrl/chat-messages/session/$sessionId/recent?count=$limit',
@@ -121,6 +134,8 @@ class ApiService {
   Future<List<ChatMessage>> getRecentMessagesFromLatestSession(
     int limit,
   ) async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse('$baseUrl/chat-messages/my/recent-messages?limit=$limit'),
       headers: {
@@ -136,6 +151,8 @@ class ApiService {
   }
 
   Future<List<ChatMessage>> getAllMessagesFromLatestSession() async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.get(
       Uri.parse('$baseUrl/chat-messages/my/messages'),
       headers: {
@@ -176,20 +193,22 @@ class ApiService {
   }
 
   //파라미터로 다이어리의 내용을 주면 api서버에 호출 해서, 알아 내 옵니다.
-  Future<GetDiaryInfoDto> getDiaryInfoByContent(String content) async {
+  Future<GetDiaryMetadataDto> getDiaryInfoByContent(String content) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.post(
-      Uri.parse('$baseUrl/openai/summary'),
+      Uri.parse('$baseUrl/openai/metadata'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': (await AuthApi.getInstance.getAccessTokenHeader())!,
       },
-      body: {'content': content},
+      body: jsonEncode({'content': content}),
     );
 
+    print(response.body);
+
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return GetDiaryInfoDto.fromJson(jsonDecode(response.body));
+      return GetDiaryMetadataDto.fromJson(jsonDecode(response.body));
     } else {
       throw new Exception('Get Diary Info By Content, 요약을 가져오던 중 문제가 생겼습니다.');
     }

@@ -1,11 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_qnote/main.dart';
 import 'package:flutter_qnote/models/user.dart';
-import 'package:flutter_qnote/screens/authscreen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk_talk.dart' as Kakao;
@@ -81,14 +78,12 @@ class AuthApi {
       // 예시:
       // _userProvider.resetState(); // 가상의 Riverpod Provider 초기화
       print("User logged out successfully. Tokens deleted.");
-
     } catch (e) {
       print("Error during logout: $e");
     }
     // 3. (LoginScreen으로 pushAndRemoveUntil 하는 로직은 여기서 하지 않음 - UI 레이어 담당)
     // -> ProfileScreen에서 Navigator 호출
   }
-
 
   Future<bool> loginFetch(String email, String password) async {
     final response = await http.post(
@@ -262,6 +257,9 @@ class AuthApi {
 
   Future<void> checkTokenAndRedirectIfNeeded() async {
     final isValid = await _isValidAccessToken();
+    print('CheckTokenAndRedirectIfNeeded: isValid = $isValid');
+
+    // 만약 유효하지 않다면, 로그인 화면으로 리다이렉트
     if (!isValid) await navigatorKey.currentState?.pushNamed('/login');
   }
 }

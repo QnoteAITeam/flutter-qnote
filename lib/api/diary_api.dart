@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_qnote/api/dto/get_diary_info_dto.dart';
 import 'package:flutter_qnote/auth/auth_api.dart';
 import 'package:flutter_qnote/models/diary.dart';
 import 'package:http/http.dart' as http;
@@ -20,8 +21,12 @@ class DiaryApi {
     return {'Authorization': token!, 'Content-Type': 'application/json'};
   }
 
-  Future<Diary> createDiary(Diary dto) async {
+  Future<FetchDiaryResponseDto> createDiary(Diary dto) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
+    print(dto.tags);
+    print(dto.emotionTags);
+
     final response = await http.post(
       Uri.parse('$baseUrl/diaries'),
       headers: await _authHeader(),
@@ -32,16 +37,19 @@ class DiaryApi {
         'emotionTags': dto.emotionTags,
       }),
     );
+
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception('Failed to create diary: ${response.body}');
     }
 
-    print('[CREATE DIARY RESPONSE] Status: ${response.statusCode}, Body: ${response.body}');
+    print(
+      '[CREATE DIARY RESPONSE] Status: ${response.statusCode}, Body: ${response.body}',
+    );
 
-    return Diary.fromJson(jsonDecode(response.body));
+    return FetchDiaryResponseDto.fromJson(jsonDecode(response.body));
   }
 
-  Future<List<Diary>> getAllDiaries(int page) async {
+  Future<List<FetchDiaryResponseDto>> getAllDiaries(int page) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     final response = await http.get(
       Uri.parse('$baseUrl/diaries?page=$page'),
@@ -51,29 +59,35 @@ class DiaryApi {
       throw Exception('Failed to fetch diaries: ${response.body}');
     }
     final List<dynamic> list = jsonDecode(response.body);
-    return Diary.fromJsonList(list);
+    return FetchDiaryResponseDto.fromJsonList(list);
   }
 
-  Future<List<Diary>> getRecentDiaries(int count) async {
+  Future<List<FetchDiaryResponseDto>> getRecentDiaries(int count) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     final response = await http.get(
       Uri.parse('$baseUrl/diaries/recent?count=$count'),
       headers: await _authHeader(),
     );
-    print('[GET RECENT DIARIES] Status: ${response.statusCode}, Body: ${response.body}');
+    print(
+      '[GET RECENT DIARIES] Status: ${response.statusCode}, Body: ${response.body}',
+    );
     if (response.statusCode == 200) {
-      if (response.body.isEmpty || response.body.toLowerCase() == 'null') return [];
+      if (response.body.isEmpty || response.body.toLowerCase() == 'null')
+        return [];
       final decodedBody = jsonDecode(response.body);
-      if (decodedBody is List) return Diary.fromJsonList(decodedBody);
+      if (decodedBody is List)
+        return FetchDiaryResponseDto.fromJsonList(decodedBody);
       return [];
     } else if (response.statusCode == 404) {
       return [];
     } else {
-      throw Exception('Failed to fetch recent diaries: Status ${response.statusCode}, Body: ${response.body}');
+      throw Exception(
+        'Failed to fetch recent diaries: Status ${response.statusCode}, Body: ${response.body}',
+      );
     }
   }
 
-  Future<Diary> getMostRecentDiary() async {
+  Future<FetchDiaryResponseDto> getMostRecentDiary() async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     final response = await http.get(
       Uri.parse('$baseUrl/diaries/recent/one'),
@@ -82,10 +96,10 @@ class DiaryApi {
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch most recent diary: ${response.body}');
     }
-    return Diary.fromJson(jsonDecode(response.body));
+    return FetchDiaryResponseDto.fromJson(jsonDecode(response.body));
   }
 
-  Future<Diary> getDiaryById(int id) async {
+  Future<FetchDiaryResponseDto> getDiaryById(int id) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     final response = await http.get(
       Uri.parse('$baseUrl/diaries/$id'),
@@ -94,10 +108,10 @@ class DiaryApi {
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch diary: ${response.body}');
     }
-    return Diary.fromJson(jsonDecode(response.body));
+    return FetchDiaryResponseDto.fromJson(jsonDecode(response.body));
   }
 
-  Future<Diary> updateDiary(int id, Diary dto) async {
+  Future<FetchDiaryResponseDto> updateDiary(int id, Diary dto) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     final response = await http.put(
       Uri.parse('$baseUrl/diaries/$id'),
@@ -112,9 +126,11 @@ class DiaryApi {
     if (response.statusCode != 200) {
       throw Exception('Failed to update diary: ${response.body}');
     }
-    print('[UPDATE DIARY RESPONSE] Status: ${response.statusCode}, Body: ${response.body}');
+    print(
+      '[UPDATE DIARY RESPONSE] Status: ${response.statusCode}, Body: ${response.body}',
+    );
 
-    return Diary.fromJson(jsonDecode(response.body));
+    return FetchDiaryResponseDto.fromJson(jsonDecode(response.body));
   }
 
   Future<void> deleteDiary(int id) async {
@@ -135,15 +151,22 @@ class DiaryApi {
       headers: await _authHeader(),
     );
     if (response.statusCode != 200 && response.statusCode != 204) {
-      if (response.statusCode == 204 || response.body.isEmpty || response.body.toLowerCase() == 'null') {
+      if (response.statusCode == 204 ||
+          response.body.isEmpty ||
+          response.body.toLowerCase() == 'null') {
         return [];
       }
       throw Exception('Failed to get PredictedAnswer: ${response.body}');
     }
-    if (response.body.isEmpty || response.body.toLowerCase() == 'null') return [];
+    if (response.body.isEmpty || response.body.toLowerCase() == 'null')
+      return [];
     final dynamic decoded = jsonDecode(response.body);
-    if (decoded is Map && decoded.containsKey('predicts') && decoded['predicts'] is List) {
-      return List<String>.from(decoded['predicts'].map((item) => item.toString()));
+    if (decoded is Map &&
+        decoded.containsKey('predicts') &&
+        decoded['predicts'] is List) {
+      return List<String>.from(
+        decoded['predicts'].map((item) => item.toString()),
+      );
     }
     return [];
   }
