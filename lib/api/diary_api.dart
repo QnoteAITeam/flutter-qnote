@@ -144,6 +144,24 @@ class DiaryApi {
     }
   }
 
+  Future<List<Diary>> searchDiaries(String query, {int page = 1}) async {
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/diaries/search'),
+      headers: await _authHeader(),
+      body: jsonEncode({'query': query, 'page': page}),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return Diary.fromJsonList(data);
+    } else {
+      print('검색 실패: ${response.statusCode} - ${response.body}');
+      throw Exception('검색 실패');
+    }
+  }
+
   Future<List<String>> getUserPredictedAnswerMostSession() async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
     final response = await http.get(

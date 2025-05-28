@@ -45,28 +45,34 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   @override
   void initState() {
     super.initState();
-    _focusedDayInternal = _toKstZero(DateTime(
-      widget.focusedDayForCalendar.year,
-      widget.focusedDayForCalendar.month,
-      widget.focusedDayForCalendar.day,
-    ));
+    _focusedDayInternal = _toKstZero(
+      DateTime(
+        widget.focusedDayForCalendar.year,
+        widget.focusedDayForCalendar.month,
+        widget.focusedDayForCalendar.day,
+      ),
+    );
   }
 
   @override
   void didUpdateWidget(covariant CalendarWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final newFocusedDay = _toKstZero(DateTime(
-      widget.focusedDayForCalendar.year,
-      widget.focusedDayForCalendar.month,
-      widget.focusedDayForCalendar.day,
-    ));
+    final newFocusedDay = _toKstZero(
+      DateTime(
+        widget.focusedDayForCalendar.year,
+        widget.focusedDayForCalendar.month,
+        widget.focusedDayForCalendar.day,
+      ),
+    );
     if (!isSameDay(newFocusedDay, _focusedDayInternal)) {
       _focusedDayInternal = newFocusedDay;
     }
   }
 
   bool _isEnabledDay(DateTime day) {
-    final normalizedToday = _toKstZero(DateTime(widget.today.year, widget.today.month, widget.today.day));
+    final normalizedToday = _toKstZero(
+      DateTime(widget.today.year, widget.today.month, widget.today.day),
+    );
     final normalizedDay = _toKstZero(DateTime(day.year, day.month, day.day));
     return !normalizedDay.isAfter(normalizedToday);
   }
@@ -84,10 +90,15 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         headerStyle: HeaderStyle(
           titleCentered: true,
           formatButtonVisible: false,
-          titleTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87),
+          titleTextStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Colors.black87,
+          ),
           leftChevronIcon: const Icon(Icons.chevron_left, color: Colors.grey),
           rightChevronIcon: const Icon(Icons.chevron_right, color: Colors.grey),
-          titleTextFormatter: (date, locale) => DateFormat.yMMMM(locale).format(date),
+          titleTextFormatter:
+              (date, locale) => DateFormat.yMMMM(locale).format(date),
         ),
         daysOfWeekHeight: 30,
         calendarBuilders: CalendarBuilders(
@@ -102,22 +113,40 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               textColor = Colors.black87;
             }
             return Center(
-              child: Text(text, style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w500)),
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             );
           },
           defaultBuilder: (context, day, focusedDay) {
-            final dayKstZero = _toKstZero(DateTime(day.year, day.month, day.day));
-            final todayKstZero = _toKstZero(DateTime(widget.today.year, widget.today.month, widget.today.day));
+            final dayKstZero = _toKstZero(
+              DateTime(day.year, day.month, day.day),
+            );
+            final todayKstZero = _toKstZero(
+              DateTime(widget.today.year, widget.today.month, widget.today.day),
+            );
             final isToday = isSameDay(dayKstZero, todayKstZero);
             final hasEvent = widget.daysWithDiary.contains(dayKstZero);
             final isEnabled = _isEnabledDay(day);
 
-            print('[DEBUG] CalendarWidget dayKstZero: $dayKstZero, hasEvent: $hasEvent, daysWithDiary: ${widget.daysWithDiary}');
-
-            return _buildCustomCell(context, day, hasEvent, isToday, isEnabled, false);
+            return _buildCustomCell(
+              context,
+              day,
+              hasEvent,
+              isToday,
+              isEnabled,
+              false,
+            );
           },
           todayBuilder: (context, day, focusedDay) {
-            final dayKstZero = _toKstZero(DateTime(day.year, day.month, day.day));
+            final dayKstZero = _toKstZero(
+              DateTime(day.year, day.month, day.day),
+            );
             final hasEvent = widget.daysWithDiary.contains(dayKstZero);
             return _buildCustomCell(context, day, hasEvent, true, true, false);
           },
@@ -130,22 +159,41 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         ),
         enabledDayPredicate: _isEnabledDay,
         onDaySelected: (selectedDay, focusedDay) {
-          final focusedDayKstZero = _toKstZero(DateTime(focusedDay.year, focusedDay.month, focusedDay.day));
+          final focusedDayKstZero = _toKstZero(
+            DateTime(focusedDay.year, focusedDay.month, focusedDay.day),
+          );
           if (!isSameDay(_focusedDayInternal, focusedDayKstZero)) {
-            setState(() { _focusedDayInternal = focusedDayKstZero; });
+            setState(() {
+              _focusedDayInternal = focusedDayKstZero;
+            });
           }
-          _handleDayCellTap(_toKstZero(DateTime(selectedDay.year, selectedDay.month, selectedDay.day)));
+          _handleDayCellTap(
+            _toKstZero(
+              DateTime(selectedDay.year, selectedDay.month, selectedDay.day),
+            ),
+          );
         },
         onPageChanged: (focusedDay) {
-          final focusedDayKstZero = _toKstZero(DateTime(focusedDay.year, focusedDay.month, focusedDay.day));
-          setState(() { _focusedDayInternal = focusedDayKstZero; });
+          final focusedDayKstZero = _toKstZero(
+            DateTime(focusedDay.year, focusedDay.month, focusedDay.day),
+          );
+          setState(() {
+            _focusedDayInternal = focusedDayKstZero;
+          });
           widget.onPageChanged?.call(focusedDayKstZero);
         },
       ),
     );
   }
 
-  Widget _buildCustomCell(BuildContext context, DateTime day, bool hasEvent, bool isToday, bool isEnabled, bool isOutside) {
+  Widget _buildCustomCell(
+    BuildContext context,
+    DateTime day,
+    bool hasEvent,
+    bool isToday,
+    bool isEnabled,
+    bool isOutside,
+  ) {
     Color circleColor;
     Border? circleBorder;
     Widget? iconContent;
@@ -163,7 +211,10 @@ class _CalendarWidgetState extends State<CalendarWidget> {
           size: 20,
         );
         if (!isToday) {
-          circleBorder = Border.all(color: Colors.orangeAccent.withOpacity(0.7), width: 1.5);
+          circleBorder = Border.all(
+            color: Colors.orangeAccent.withOpacity(0.7),
+            width: 1.5,
+          );
         }
       } else {
         circleColor = Colors.grey.shade300;
@@ -175,9 +226,13 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     }
 
     return GestureDetector(
-      onTap: () => isEnabled && !isOutside
-          ? _handleDayCellTap(_toKstZero(DateTime(day.year, day.month, day.day)))
-          : null,
+      onTap:
+          () =>
+              isEnabled && !isOutside
+                  ? _handleDayCellTap(
+                    _toKstZero(DateTime(day.year, day.month, day.day)),
+                  )
+                  : null,
       child: Container(
         margin: const EdgeInsets.all(5.0),
         width: 36,
@@ -194,8 +249,10 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   void _handleDayCellTap(DateTime tappedDayKstZero) {
     final bool hasEvent = widget.daysWithDiary.contains(tappedDayKstZero);
-    print('[DEBUG] _handleDayCellTap tappedDayKstZero: $tappedDayKstZero, hasEvent: $hasEvent');
-    widget.onDateTap?.call(DateTapDetails(date: tappedDayKstZero, hasEvent: hasEvent));
+
+    widget.onDateTap?.call(
+      DateTapDetails(date: tappedDayKstZero, hasEvent: hasEvent),
+    );
   }
 
   bool isSameDay(DateTime? a, DateTime? b) {
