@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_qnote/api/diary_api.dart';
+import 'package:flutter_qnote/api/dto/get_user_info_dto.dart';
 import 'package:flutter_qnote/api/user_api.dart';
 import 'package:flutter_qnote/models/diary.dart';
 import 'package:flutter_qnote/models/user.dart';
@@ -86,7 +87,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<Map<String, dynamic>> _fetchUserData() async {
     if (!_isUserAuthenticated) return {"userName": "방문자님"};
     try {
-      final User currentUser = await UserApi.instance.getUserCredential();
+      final FetchUserResponseDto currentUser =
+          await UserApi.instance.getUserCredential();
+
       return {"userName": "${currentUser.username}님"};
     } catch (e) {
       return {"userName": "사용자님"};

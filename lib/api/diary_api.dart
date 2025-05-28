@@ -111,8 +111,11 @@ class DiaryApi {
     return FetchDiaryResponseDto.fromJson(jsonDecode(response.body));
   }
 
+  //Dto에 넣는 내용으로 다 바뀝니다. 빈배열 넣으면, 태그가 다 사라지는 것입니다.
+  //바꾸고 싶지 않다면, 기존 배열을 유지해서 보내거나, 아얘 null 값을 보내야 합니다.
   Future<FetchDiaryResponseDto> updateDiary(int id, Diary dto) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     final response = await http.put(
       Uri.parse('$baseUrl/diaries/$id'),
       headers: await _authHeader(),
@@ -144,7 +147,10 @@ class DiaryApi {
     }
   }
 
-  Future<List<FetchDiaryResponseDto>> searchDiaries(String query, {int page = 1}) async {
+  Future<List<FetchDiaryResponseDto>> searchDiaries(
+    String query, {
+    int page = 1,
+  }) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.post(
