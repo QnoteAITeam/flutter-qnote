@@ -9,12 +9,18 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  table_calendar: ^3.0.0
-  intl: ^0.18.0
-  font_awesome_flutter: ^10.6.0
+  table_calendar: ^3.0.9
+  intl: ^0.19.0
+  font_awesome_flutter: ^10.4.0
   http: ^1.4.0
   riverpod: ^2.6.1
   flutter_secure_storage: ^9.2.4
+  flutter_dotenv: ^5.2.1
+  kakao_flutter_sdk: ^1.9.7+3
+  shimmer: ^3.0.0
+
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -27,6 +33,9 @@ flutter:
     - assets/images/
     - assets/images/kakao_login_large_wide.png
     - assets/images/qnote_icon.png
+    - assets/images/google_login_large_wide.png
+    - assets/images/ai_avatar.png
+    - .env
 
   fonts:
     - family: SingleDay
@@ -36,3 +45,11 @@ flutter:
     - family: NanumMyeongjo
       fonts:
         - asset: assets/fonts/NanumMyeongjo-Regular.ttf
+
+    - family: InterVariable
+      fonts:
+        - asset: assets/fonts/InterVariable.ttf
+
+  # 만약 intl 버전 충돌 발생 시 (table_calendar 등이 intl 0.18.x 요구 시)
+dependency_overrides:
+  intl: ^0.19.0
