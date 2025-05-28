@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_qnote/api/dto/get_user_info_dto.dart';
 import 'package:flutter_qnote/auth/auth_api.dart';
-import 'package:flutter_qnote/models/user.dart';
 import 'package:http/http.dart' as http;
 
 class UserApi {
@@ -18,7 +18,7 @@ class UserApi {
   }
 
   //기본적인 유저의 정보를 관리합니다.
-  Future<User> getUserCredential() async {
+  Future<FetchUserResponseDto> getUserCredential() async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.get(
@@ -30,6 +30,6 @@ class UserApi {
 
     print(response.body);
 
-    return User.fromJson(jsonDecode(response.body));
+    return FetchUserResponseDto.fromJson(jsonDecode(response.body));
   }
 }
