@@ -32,9 +32,7 @@ class CalendarWidget extends StatefulWidget {
 
 class _CalendarWidgetState extends State<CalendarWidget> {
   late DateTime _focusedDayInternal;
-  final List<String> _koreanWeekdays = ["월", "화", "수", "목", "금", "토", "일"];
-
-  DateTime _add9Hours(DateTime date) => date.add(const Duration(hours: 9));
+  final List<String> _koreanWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
   // 날짜를 UTC+9로 변환한 뒤, 반드시 시간 0시로 맞춰주는 함수
   DateTime _toKstZero(DateTime date) {
@@ -70,11 +68,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   }
 
   bool _isEnabledDay(DateTime day) {
-    final normalizedToday = _toKstZero(
-      DateTime(widget.today.year, widget.today.month, widget.today.day),
-    );
-    final normalizedDay = _toKstZero(DateTime(day.year, day.month, day.day));
-    return !normalizedDay.isAfter(normalizedToday);
+    return true;
   }
 
   @override
@@ -87,6 +81,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         lastDay: DateTime(2030, 12, 31),
         focusedDay: _focusedDayInternal,
         calendarFormat: CalendarFormat.month,
+        startingDayOfWeek: StartingDayOfWeek.sunday,
+        currentDay: _toKstZero(DateTime.now()),
+
         headerStyle: HeaderStyle(
           titleCentered: true,
           formatButtonVisible: false,
@@ -103,7 +100,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         daysOfWeekHeight: 30,
         calendarBuilders: CalendarBuilders(
           dowBuilder: (context, day) {
-            final text = _koreanWeekdays[day.weekday - 1];
+            final weekdayIndex = (day.weekday % 7);
+            final text = _koreanWeekdays[weekdayIndex];
             final Color textColor;
             if (day.weekday == DateTime.saturday) {
               textColor = Colors.blue[700]!;
@@ -130,12 +128,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             final todayKstZero = _toKstZero(
               DateTime(widget.today.year, widget.today.month, widget.today.day),
             );
-            final isToday = isSameDay(dayKstZero, todayKstZero);
+            final isToday = isSameDay(_toKstZero(day), _toKstZero(DateTime.now()));
             final hasEvent = widget.daysWithDiary.contains(dayKstZero);
             final isEnabled = _isEnabledDay(day);
-            
+
             return _buildCustomCell(context, day, hasEvent, isToday, isEnabled, false);
-            
+
           },
           todayBuilder: (context, day, focusedDay) {
             final dayKstZero = _toKstZero(
@@ -151,7 +149,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             return _buildCustomCell(context, day, false, false, false, true);
           },
         ),
-        enabledDayPredicate: _isEnabledDay,
+        enabledDayPredicate: (_) => true,
         onDaySelected: (selectedDay, focusedDay) {
           final focusedDayKstZero = _toKstZero(
             DateTime(focusedDay.year, focusedDay.month, focusedDay.day),
@@ -192,10 +190,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     Border? circleBorder;
     Widget? iconContent;
 
+    final isCurrentMonth = day.month == _focusedDayInternal.month;
+
     if (isOutside) {
       circleColor = Colors.grey.shade200.withOpacity(0.5);
     } else if (!isEnabled) {
-      circleColor = Colors.grey.shade200.withOpacity(0.7);
+      circleColor = isCurrentMonth
+          ? Colors.grey.shade300
+          : Colors.grey.shade200.withOpacity(0.7);
     } else {
       if (hasEvent) {
         circleColor = Colors.yellow.shade100;
@@ -249,8 +251,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     );
   }
 
-  bool isSameDay(DateTime? a, DateTime? b) {
-    if (a == null || b == null) return false;
+  bool isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

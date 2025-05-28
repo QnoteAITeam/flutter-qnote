@@ -3,9 +3,10 @@ import 'package:intl/intl.dart';
 
 class DateSelectorWidget extends StatelessWidget {
   final DateTime selectedDate;
-  final VoidCallback onDateTap; // 달력 아이콘 클릭 시 콜백
+  final VoidCallback? onDateTap; // 달력 아이콘 클릭 시 콜백
   final Color fieldBackgroundColor;
   final double fieldFontSize;
+  final bool showCalendarIcon;
 
   const DateSelectorWidget({
     Key? key,
@@ -13,6 +14,7 @@ class DateSelectorWidget extends StatelessWidget {
     required this.onDateTap,
     required this.fieldBackgroundColor,
     required this.fieldFontSize,
+    this.showCalendarIcon = true,
   }) : super(key: key);
 
   @override
@@ -39,6 +41,7 @@ class DateSelectorWidget extends StatelessWidget {
               ),
             ),
           ),
+          if (showCalendarIcon)
           IconButton(
             icon: Icon(Icons.calendar_today_outlined, color: Colors.grey[600], size: 22),
             padding: EdgeInsets.zero,

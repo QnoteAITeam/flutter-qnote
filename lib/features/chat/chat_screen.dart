@@ -206,8 +206,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (aiMessage.askingNumericValue == 0 &&
         aiMessage.state == MessageState.done) {
-      print('[DEBUG] suggestedTags: ${aiMessage.suggestedTags}');
-      print('[DEBUG] suggestedEmotionTags: ${aiMessage.suggestedEmotionTags}');
 
       String finalSummary = aiMessage.message;
       String? finalTitle = aiMessage.suggestedTitle;
@@ -219,13 +217,11 @@ class _ChatScreenState extends State<ChatScreen> {
       List<String> finalUniqueTags =
           allSuggestedTags.where((tag) => tag.isNotEmpty).toSet().toList();
 
-      print('[DEBUG] 최종 태그: $finalUniqueTags');
-
       setStateIfMounted(() {
         _diarySummaryForButton = finalSummary;
         _diaryTitleForButton =
             finalTitle ??
-            '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now())})';
+            '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now().add(const Duration(hours: 9)))})';
         _diaryTagsForButton = finalUniqueTags;
         _showAskingZeroDiaryButton = true;
       });
@@ -273,7 +269,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
               // initialSummaryFromAI: _diarySummaryForButton,
               initialTags: diaryMetaData.tags,
-              initialDate: DateTime.now(),
+              initialDate: DateTime.now().add(const Duration(hours: 9)),
             ),
       ),
     );

@@ -46,7 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   int _currentIndex = 0;
   String _userName = '사용자님';
   late DateTime _focusedDayForCalendar;
-  final DateTime _today = DateTime.now();
+  final DateTime _today = DateTime.now().add(const Duration(hours: 9));
 
   Set<DateTime> _daysWithDiaryFromApi = {};
   List<Diary> _cachedDiaries = [];
@@ -219,6 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(snackBarMessageForError),
+              behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -284,7 +285,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _handleCalendarDateTap(DateTapDetails details) {
-    if (details.hasEvent) {
+
+    final now = DateTime.now().add(const Duration(hours: 9));
+    final todayDate = DateTime(now.year, now.month, now.day);
+    final tappedDate = DateTime(details.date.year, details.date.month, details.date.day);
+
       Diary? tappedDiary;
       for (var diary in _cachedDiaries) {
         if (diary.createdAt != null) {
@@ -294,18 +299,20 @@ class _DashboardScreenState extends State<DashboardScreen>
             diaryDatePlus9.month,
             diaryDatePlus9.day,
           );
-          if (_isSameDay(diaryDateOnly, details.date)) {
+          if (_isSameDay(diaryDateOnly, tappedDate)) {
             tappedDiary = diary;
             break;
           }
         }
       }
-      if (tappedDiary != null && mounted) {
+
         FocusScope.of(context).unfocus();
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DiaryDetailScreen(diaryToEdit: tappedDiary),
+            builder: (context) => DiaryDetailScreen(diaryToEdit: tappedDiary,
+              initialDate: tappedDiary == null ? tappedDate : null,
+            ),
           ),
         ).then((returnedValue) {
           FocusScope.of(context).unfocus();
@@ -314,8 +321,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           }
         });
       }
-    }
-  }
 
   void _navigateToNewDiaryViaChat() {
     if (mounted) {

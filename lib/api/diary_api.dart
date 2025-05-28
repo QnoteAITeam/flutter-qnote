@@ -68,9 +68,6 @@ class DiaryApi {
       Uri.parse('$baseUrl/diaries/recent?count=$count'),
       headers: await _authHeader(),
     );
-    print(
-      '[GET RECENT DIARIES] Status: ${response.statusCode}, Body: ${response.body}',
-    );
     if (response.statusCode == 200) {
       if (response.body.isEmpty || response.body.toLowerCase() == 'null')
         return [];
@@ -126,12 +123,10 @@ class DiaryApi {
         'emotionTags': dto.emotionTags,
       }),
     );
-    if (response.statusCode != 200) {
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception('Failed to update diary: ${response.body}');
     }
-    print(
-      '[UPDATE DIARY RESPONSE] Status: ${response.statusCode}, Body: ${response.body}',
-    );
 
     return FetchDiaryResponseDto.fromJson(jsonDecode(response.body));
   }

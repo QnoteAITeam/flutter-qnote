@@ -13,7 +13,7 @@ Diary diaryFromDto(FetchDiaryResponseDto dto) {
     content: dto.content,
     summary: dto.summary,
     createdAt: dto.createdAt,
-    updatedAt: dto.updatedAt,
+    updatedAt: dto.createdAt,
     tags: dto.tags,
     emotionTags: dto.emotionTags,
   );
@@ -45,7 +45,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   late TextEditingController _tagsController;
-  late DateTime _selectedDate;
+  late DateTime _selectedDate = DateTime.now().add(const Duration(hours: 9));
   bool _isLoading = false;
 
   static const Color _fieldBackgroundColor = Colors.white;
@@ -64,9 +64,9 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
       _contentController = TextEditingController(text: diary.content);
       final allTags = [...diary.tags, ...diary.emotionTags];
       _tagsController = TextEditingController(text: allTags.join(', '));
-      _selectedDate = diary.createdAt ?? diary.updatedAt ?? DateTime.now();
+      _selectedDate = diary.createdAt ?? diary.updatedAt ?? DateTime.now().add(const Duration(hours: 9));
     } else {
-      _selectedDate = widget.initialDate ?? DateTime.now();
+      _selectedDate = widget.initialDate ?? DateTime.now().add(const Duration(hours: 9));
       _titleController = TextEditingController(text: widget.initialTitle ?? _defaultTitleForDate(_selectedDate));
       _contentController = TextEditingController(text: widget.initialContent ?? '');
       _tagsController = TextEditingController(text: (widget.initialTags ?? []).join(', '));
@@ -121,11 +121,10 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
         content: diaryContent,
         summary: widget.initialSummaryFromAI ?? clientSideSummary,
         createdAt: widget.diaryToEdit?.createdAt ?? _selectedDate,
-        updatedAt: DateTime.now(),
+        updatedAt: DateTime.now().add(const Duration(hours: 9)),
         tags: currentTagNames,
         emotionTags: [],
       );
-
       // 수정된 부분: DTO 반환 → 변환 후 Diary로 사용
       FetchDiaryResponseDto resultDto;
       if (widget.diaryToEdit != null) {
@@ -167,16 +166,16 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
 
   Future<void> _selectDate(BuildContext context) async {
     FocusScope.of(context).unfocus();
-    final DateTime now = DateTime.now();
+    final DateTime now = DateTime.now().add(const Duration(hours: 9));
     final DateTime firstSelectableDate = DateTime(2000);
-    DateTime initialPickerDate = _selectedDate.isAfter(now) ? now : _selectedDate;
-    if (initialPickerDate.isBefore(firstSelectableDate)) initialPickerDate = firstSelectableDate;
+    final DateTime initialPickerDate = _selectedDate;
 
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialPickerDate,
       firstDate: firstSelectableDate,
       lastDate: now,
+      currentDate: now,
       helpText: '일기 날짜 선택',
       cancelText: '취소',
       confirmText: '확인',
@@ -201,12 +200,6 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
       if (mounted) {
         setState(() {
           _selectedDate = picked;
-          if (widget.diaryToEdit == null &&
-              (widget.initialTitle == null ||
-                  _titleController.text.startsWith('오늘의 일기 (') ||
-                  _titleController.text.isEmpty)) {
-            _titleController.text = _defaultTitleForDate(_selectedDate);
-          }
         });
       }
     }
@@ -225,8 +218,10 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
           foregroundColor: Colors.black,
           elevation: 0,
           centerTitle: true,
-          title: Text(widget.diaryToEdit != null ? '일기 수정' : '일기 저장',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          title: Text(
+            widget.diaryToEdit != null ? '오늘의 일기' : '일기 저장',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
@@ -234,7 +229,9 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
               Navigator.pop(context);
             },
           ),
-          actions: [
+          actions: widget.diaryToEdit != null
+              ? [] // 오늘의 일기 상세보기면 오른쪽 버튼 없음!
+              : [
             IconButton(
               icon: _isLoading
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
@@ -244,6 +241,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
             ),
           ],
         ),
+
         backgroundColor: const Color(0xFFF4F6F8),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -281,6 +279,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                 onDateTap: () => _selectDate(context),
                 fieldBackgroundColor: _fieldBackgroundColor,
                 fieldFontSize: _fieldFontSize,
+                showCalendarIcon: true,
               ),
               const SizedBox(height: 18),
               const _SectionLabel('내용'),
