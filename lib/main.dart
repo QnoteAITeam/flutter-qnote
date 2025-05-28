@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: const [
         Locale('ko', 'KR'), // 한국어 지원
-        Locale('en', ''),    // 영어 지원 (기본값)
+        Locale('en', ''), // 영어 지원 (기본값)
         // 다른 지원 언어 추가 가능
       ],
       locale: const Locale('ko', 'KR'), // 기본 로케일을 한국어로 설정 (선택적)
