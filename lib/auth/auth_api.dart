@@ -15,7 +15,7 @@ class Tokens {
   Tokens(this.accessToken, this.refreshToken);
 
   factory Tokens.from(Map<String, dynamic> json) {
-    return Tokens(json['accessToken'], json['accessToken']);
+    return Tokens(json['accessToken'], json['refreshToken']); // ✅ 수정
   }
 }
 

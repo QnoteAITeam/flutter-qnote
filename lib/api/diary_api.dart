@@ -144,7 +144,7 @@ class DiaryApi {
     }
   }
 
-  Future<List<Diary>> searchDiaries(String query, {int page = 1}) async {
+  Future<List<FetchDiaryResponseDto>> searchDiaries(String query, {int page = 1}) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
 
     final response = await http.post(
@@ -155,7 +155,10 @@ class DiaryApi {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return Diary.fromJsonList(data);
+
+      return data.map((element) {
+        return FetchDiaryResponseDto.fromJson(element);
+      }).toList();
     } else {
       print('검색 실패: ${response.statusCode} - ${response.body}');
       throw Exception('검색 실패');
