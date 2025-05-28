@@ -23,6 +23,10 @@ class DiaryApi {
 
   Future<FetchDiaryResponseDto> createDiary(Diary dto) async {
     await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
+    print(dto.tags);
+    print(dto.emotionTags);
+
     final response = await http.post(
       Uri.parse('$baseUrl/diaries'),
       headers: await _authHeader(),
@@ -33,6 +37,7 @@ class DiaryApi {
         'emotionTags': dto.emotionTags,
       }),
     );
+
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception('Failed to create diary: ${response.body}');
     }
