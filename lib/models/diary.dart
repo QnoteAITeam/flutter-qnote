@@ -30,7 +30,11 @@ class Diary {
       summary: json['summary'] as String? ?? '',
       createdAt: (json['createdAt'] is String) ? DateTime.tryParse(json['createdAt']) : null,
       updatedAt: (json['updatedAt'] is String) ? DateTime.tryParse(json['updatedAt']) : null,
-      tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      tags: (json['tags'] is List)
+          ? (json['tags'] as List).map((e) => e.toString()).toList()
+          : (json['tags'] is String)
+          ? (json['tags'] as String).split(RegExp(r'[,\s]+')).where((t) => t.isNotEmpty).toList()
+          : [],
       emotionTags: (json['emotionTags'] as List?)?.map((e) => e.toString()).toList() ?? [],
     );
   }

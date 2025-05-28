@@ -15,6 +15,21 @@ import 'widgets/dashboard_app_bar.dart';
 import 'widgets/greeting_card_widget.dart';
 import 'widgets/diary_summary_section_widget.dart';
 import 'package:flutter_qnote/features/diary/diary_detail_screen.dart';
+import 'package:flutter_qnote/api/dto/get_diary_info_dto.dart'; // DTO import 추가
+
+// 변환 함수 추가
+Diary diaryFromDto(FetchDiaryResponseDto dto) {
+  return Diary(
+    id: dto.id,
+    title: dto.title,
+    content: dto.content,
+    tags: dto.tags,
+    emotionTags: dto.emotionTags,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    summary: dto.summary,
+  );
+}
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -130,7 +145,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     if (mounted) setState(() => _isLoadingDiaries = true);
     String? snackBarMessageForError;
     try {
-      final List<Diary> fetchedDiaries = await DiaryApi.instance.getRecentDiaries(150);
+      // 여기서 DTO로 받아서 Diary로 변환
+      final List<FetchDiaryResponseDto> fetchedDtos = await DiaryApi.instance.getRecentDiaries(150);
+      final List<Diary> fetchedDiaries = fetchedDtos.map((dto) => diaryFromDto(dto)).toList();
       _cachedDiaries = fetchedDiaries;
       _initialDiariesFetchAttempted = true;
       _daysWithDiaryFromApi = fetchedDiaries
@@ -344,7 +361,6 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         ],
       );
     }
-
     return Column(
       children: [
         _buildGreeting(),
@@ -422,7 +438,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           },
         ),
         floatingActionButton: MediaQuery.of(context).viewInsets.bottom == 0 && _currentIndex != 2
-          ? FloatingActionButton(
+            ? FloatingActionButton(
           backgroundColor: const Color(0xFFB59A7B),
           elevation: 2,
           onPressed: () {
@@ -431,7 +447,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           child: const Icon(Icons.edit, color: Colors.white, size: 32),
           shape: const CircleBorder(),
         )
-        : null,
+            : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
@@ -451,7 +467,7 @@ class _CustomBottomNavBar extends StatelessWidget {
       shape: const CircularNotchedRectangle(),
       notchMargin: 8,
       child: SizedBox(
-        height: 48, // 얇게
+        height: 48,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -467,7 +483,7 @@ class _CustomBottomNavBar extends StatelessWidget {
               selected: currentIndex == 1,
               onTap: () => onTap(1),
             ),
-            const SizedBox(width: 48), // 플로팅 버튼 자리
+            const SizedBox(width: 48),
             _NavItem(
               icon: Icons.calendar_today_outlined,
               label: '일정',

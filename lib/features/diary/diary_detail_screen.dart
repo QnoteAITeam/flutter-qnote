@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_qnote/api/diary_api.dart';
 import 'package:flutter_qnote/models/diary.dart';
+import 'package:flutter_qnote/api/dto/get_diary_info_dto.dart'; // DTO import
 import 'package:intl/intl.dart';
 import 'widgets/date_selector_widget.dart';
+
+// DTO → Diary 변환 함수
+Diary diaryFromDto(FetchDiaryResponseDto dto) {
+  return Diary(
+    id: dto.id,
+    title: dto.title,
+    content: dto.content,
+    summary: dto.summary,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    tags: dto.tags,
+    emotionTags: dto.emotionTags,
+  );
+}
 
 class DiaryDetailScreen extends StatefulWidget {
   final Diary? diaryToEdit;
@@ -76,7 +91,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
     setState(() => _isLoading = true);
 
     final currentTagNames = _tagsController.text
-        .split(',')
+        .split(RegExp(r'[,\s]+'))
         .map((e) => e.trim())
         .where((t) => t.isNotEmpty)
         .toSet()
@@ -111,12 +126,15 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
         emotionTags: [],
       );
 
-      Diary resultDiaryFromServer;
+      // 수정된 부분: DTO 반환 → 변환 후 Diary로 사용
+      FetchDiaryResponseDto resultDto;
       if (widget.diaryToEdit != null) {
-        resultDiaryFromServer = await DiaryApi.instance.updateDiary(widget.diaryToEdit!.id!, diaryDataForApi);
+        resultDto = await DiaryApi.instance.updateDiary(widget.diaryToEdit!.id!, diaryDataForApi);
       } else {
-        resultDiaryFromServer = await DiaryApi.instance.createDiary(diaryDataForApi);
+        resultDto = await DiaryApi.instance.createDiary(diaryDataForApi);
       }
+
+      Diary resultDiaryFromServer = diaryFromDto(resultDto);
 
       Diary diaryToReturn = Diary(
         id: resultDiaryFromServer.id,
@@ -241,7 +259,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
-                    borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)), // 테두리 얇게
+                    borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -249,7 +267,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
-                    borderSide: BorderSide(width: 1.1, color: Color(0xFFB59A7B)), // 포커스시 살짝 진하게
+                    borderSide: BorderSide(width: 1.1, color: Color(0xFFB59A7B)),
                   ),
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   isDense: true,
@@ -258,7 +276,6 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
               ),
               const SizedBox(height: 18),
               const _SectionLabel('날짜'),
-              // 날짜 입력란: 텍스트 클릭 시 달력 안 뜨고, 아이콘 클릭 시에만 뜸
               DateSelectorWidget(
                 selectedDate: _selectedDate,
                 onDateTap: () => _selectDate(context),
@@ -294,17 +311,17 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-          borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-          borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-          borderSide: BorderSide(width: 1.1, color: Color(0xFFB59A7B)),
-        ),
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(width: 0.7, color: Color(0xFFCCCCCC)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(width: 1.1, color: Color(0xFFB59A7B)),
+                  ),
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   isDense: true,
                 ),
