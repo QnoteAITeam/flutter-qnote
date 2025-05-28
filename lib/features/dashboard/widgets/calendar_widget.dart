@@ -112,8 +112,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             final hasEvent = widget.daysWithDiary.contains(dayKstZero);
             final isEnabled = _isEnabledDay(day);
 
-            print('[DEBUG] CalendarWidget dayKstZero: $dayKstZero, hasEvent: $hasEvent, daysWithDiary: ${widget.daysWithDiary}');
-
             return _buildCustomCell(context, day, hasEvent, isToday, isEnabled, false);
           },
           todayBuilder: (context, day, focusedDay) {
@@ -194,7 +192,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   void _handleDayCellTap(DateTime tappedDayKstZero) {
     final bool hasEvent = widget.daysWithDiary.contains(tappedDayKstZero);
-    print('[DEBUG] _handleDayCellTap tappedDayKstZero: $tappedDayKstZero, hasEvent: $hasEvent');
     widget.onDateTap?.call(DateTapDetails(date: tappedDayKstZero, hasEvent: hasEvent));
   }
 
