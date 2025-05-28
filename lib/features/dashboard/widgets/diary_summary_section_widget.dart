@@ -54,7 +54,6 @@ class DiarySummarySectionWidget extends StatelessWidget {
       todaySummaryText = '요약 정보를 불러올 수 없습니다.';
     }
 
-    print('[DEBUG] DiarySummarySectionWidget daysWithDiary: $daysWithDiary');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
