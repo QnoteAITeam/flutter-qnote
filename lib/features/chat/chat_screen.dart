@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_qnote/api/api_service.dart';
+import 'package:flutter_qnote/api/diary_api.dart';
 import 'package:flutter_qnote/api/dto/send_message_dto.dart';
 import 'package:flutter_qnote/features/diary/diary_detail_screen.dart';
 import 'package:flutter_qnote/models/diary.dart';
@@ -11,7 +12,6 @@ import 'widgets/chat_app_bar.dart';
 import 'widgets/chat_message_bubble.dart';
 import 'widgets/shimmer_loading_bubble.dart';
 import 'widgets/save_diary_widget.dart';
-import 'widgets/chat_options_area.dart';
 import 'widgets/chat_input_area.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -28,6 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _isCreatingSession = true;
   bool _isAiResponding = false;
+  bool _isOptionLoading = false; // 옵션 리스트 로딩 상태 추가
   final List<SendMessageDto> _chatMessages = [];
 
   String? _diarySummaryForButton;
@@ -51,6 +52,7 @@ class _ChatScreenState extends State<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).unfocus();
     });
+    _fetchPredictedAnswers();
   }
 
   @override
@@ -71,7 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final ChatSession newSession =
-          await ApiService.getInstance.createNewSession();
+      await ApiService.getInstance.createNewSession();
       if (mounted) {
         _currentSession = newSession;
         if (_chatMessages.isEmpty) {
@@ -83,14 +85,6 @@ class _ChatScreenState extends State<ChatScreen> {
               askingNumericValue: 1,
             ),
           );
-          setStateIfMounted(() {
-            _currentChatOptions = [
-              '오늘 아침으로 샐러드 먹었어',
-              '간단하게 시리얼 먹었어',
-              '시간이 없어서 아침을 안먹었어',
-              '글쎄, 딱히 기억이 안나네',
-            ];
-          });
         }
       }
     } catch (_) {
@@ -143,10 +137,9 @@ class _ChatScreenState extends State<ChatScreen> {
       _showAskingZeroDiaryButton = false;
       _diarySummaryForButton = null;
       _diaryTagsForButton = [];
-      if (isFromOption) _currentChatOptions = [];
+      _currentChatOptions = [];
     });
     _scrollToBottom();
-
     if (!isFromOption) _textController.clear();
 
     try {
@@ -156,18 +149,8 @@ class _ChatScreenState extends State<ChatScreen> {
         _processAiResponse(aiResponse);
         setStateIfMounted(() {
           _chatMessages.add(aiResponse);
-          if (!_showAskingZeroDiaryButton &&
-              aiResponse.askingNumericValue != null &&
-              aiResponse.askingNumericValue != 0) {
-            _currentChatOptions = [
-              '네, 다음 질문해주세요.',
-              '아니요, 더 할 말 없어요.',
-              '음... 잠시만요.',
-            ];
-          } else {
-            _currentChatOptions = [];
-          }
         });
+        await _fetchPredictedAnswers(); // 옵션 리스트 새로고침
       }
     } catch (_) {
       if (mounted) {
@@ -193,7 +176,33 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // AI 응답에서 태그/감정태그를 모두 List<String>으로 합쳐서 저장
+  // 옵션 리스트를 API에서 받아와서 상태에 저장 (고정 키워드 추가)
+  Future<void> _fetchPredictedAnswers() async {
+    setStateIfMounted(() {
+      _isOptionLoading = true;
+    });
+    try {
+      final apiList = await DiaryApi.instance.getUserPredictedAnswerMostSession();
+      if (_chatMessages.length == 1 && _chatMessages.first.role == MessageRole.assistance) {
+        // 첫 인삿말만 있을 때는 옵션 리스트를 비움
+        _currentChatOptions = [];
+      } else {
+        _currentChatOptions = [
+          ...apiList,
+          '이제 일기를 작성해줘',
+        ];
+      }
+    } catch (_) {
+      setStateIfMounted(() {
+        _currentChatOptions = ['이제 일기를 작성해줘'];
+      });
+    } finally {
+      setStateIfMounted(() {
+        _isOptionLoading = false;
+      });
+    }
+  }
+
   void _processAiResponse(SendMessageDto aiMessage) {
     if (aiMessage.role != MessageRole.assistance) {
       setStateIfMounted(() {
@@ -206,7 +215,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (aiMessage.askingNumericValue == 0 &&
         aiMessage.state == MessageState.done) {
-
       String finalSummary = aiMessage.message;
       String? finalTitle = aiMessage.suggestedTitle;
 
@@ -215,13 +223,12 @@ class _ChatScreenState extends State<ChatScreen> {
         ...aiMessage.suggestedEmotionTags,
       ];
       List<String> finalUniqueTags =
-          allSuggestedTags.where((tag) => tag.isNotEmpty).toSet().toList();
+      allSuggestedTags.where((tag) => tag.isNotEmpty).toSet().toList();
 
       setStateIfMounted(() {
         _diarySummaryForButton = finalSummary;
         _diaryTitleForButton =
-            finalTitle ??
-            '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now().add(const Duration(hours: 9)))})';
+            finalTitle ?? '오늘의 일기 (${DateFormat('MM.dd').format(DateTime.now().add(const Duration(hours: 9)))})';
         _diaryTagsForButton = finalUniqueTags;
         _showAskingZeroDiaryButton = true;
       });
@@ -243,7 +250,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _sendMessage(optionText, isFromOption: true);
   }
 
-  // DiaryDetailScreen 호출 시 initialTags에 _diaryTagsForButton 전달
   void _navigateToDiaryDetailScreen() async {
     if (!_showAskingZeroDiaryButton ||
         _diarySummaryForButton == null ||
@@ -258,26 +264,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final Diary? savedDiary = await Navigator.push<Diary>(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => DiaryDetailScreen(
-              // initialTitle: _diaryTitleForButton,
-              // initialContent: _diarySummaryForButton!,
-              // initialSummaryFromAI: _diarySummaryForButton,
-              // initialTags: _diaryTagsForButton,
-              initialTitle: diaryMetaData.title,
-              initialContent: diaryMetaData.content,
-
-              // initialSummaryFromAI: _diarySummaryForButton,
-              initialTags: diaryMetaData.tags,
-              initialDate: DateTime.now().add(const Duration(hours: 9)),
-            ),
+        builder: (context) => DiaryDetailScreen(
+          initialTitle: diaryMetaData.title,
+          initialContent: diaryMetaData.content,
+          initialTags: diaryMetaData.tags,
+          initialDate: DateTime.now().add(const Duration(hours: 9)),
+        ),
       ),
     );
 
     if (!mounted) return;
     _chatFocusNode.unfocus();
     FocusScope.of(context).unfocus();
-
     if (savedDiary != null) {
       setStateIfMounted(() {
         _showAskingZeroDiaryButton = false;
@@ -311,33 +309,60 @@ class _ChatScreenState extends State<ChatScreen> {
             );
           },
         ),
-        body:
-            _isCreatingSession
-                ? const Center(
-                  child: CircularProgressIndicator(
-                    key: ValueKey("chat_session_loading"),
+        body: _isCreatingSession
+            ? const Center(
+          child: CircularProgressIndicator(
+            key: ValueKey("chat_session_loading"),
+          ),
+        )
+            : Column(
+          children: [
+            Expanded(child: _buildChatList()),
+            // 옵션 리스트 영역 (입력창 위)
+            if (_currentChatOptions.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _currentChatOptions.map((option) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: OutlinedButton(
+                          onPressed: () => _onOptionTapped(option),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.grey[100],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            side: BorderSide.none,
+                          ),
+                          child: Text(
+                            option,
+                            style: const TextStyle(
+                              color: Colors.brown,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
-                )
-                : Column(
-                  children: [
-                    Expanded(child: _buildChatList()),
-                    ChatOptionsArea(
-                      options: _currentChatOptions,
-                      isAiResponding: _isAiResponding,
-                      onOptionTapped: _onOptionTapped,
-                    ),
-                    ChatInputArea(
-                      textController: _textController,
-                      focusNode: _chatFocusNode,
-                      onSendPressed: _onPressedSendButton,
-                      onAttachPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('첨부 기능은 준비 중입니다.')),
-                        );
-                      },
-                    ),
-                  ],
                 ),
+              ),
+            ChatInputArea(
+              textController: _textController,
+              focusNode: _chatFocusNode,
+              onSendPressed: _onPressedSendButton,
+              onAttachPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('첨부 기능은 준비 중입니다.')),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -346,15 +371,15 @@ class _ChatScreenState extends State<ChatScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16.0),
-      itemCount:
-          _chatMessages.length +
+      itemCount: _chatMessages.length +
           (_isAiResponding ? 1 : 0) +
           (_showAskingZeroDiaryButton && !_isAiResponding ? 1 : 0),
       itemBuilder: (context, index) {
         int messageBoundary = _chatMessages.length;
         int potentialButtonIndex = messageBoundary + (_isAiResponding ? 1 : 0);
 
-        if (_isAiResponding && index == messageBoundary) {
+        if (_isAiResponding && !_isOptionLoading && index == messageBoundary) {
+          // AI 답변 생성 중일 때만 shimmer 보여줌
           return const ShimmerLoadingBubble(smallAiAvatar: smallAiAvatar);
         }
         if (_showAskingZeroDiaryButton &&
