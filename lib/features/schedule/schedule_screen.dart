@@ -1,5 +1,6 @@
 // lib/features/schedule/schedule_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_qnote/api/schedule/schedule_api.dart';
 import 'package:flutter_qnote/features/schedule/widgets/schedule_holder_widget.dart';
 import 'package:intl/intl.dart'; // 날짜 포매팅을 위해 필요
 
@@ -16,28 +17,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final List<DateTime> _weekDays = [];
 
   // 헤더, 날짜 선택기, 일정 목록 등에 사용될 더미 데이터
-  final List<Map<String, dynamic>> _schedules = [
+  List<Map<String, dynamic>> _schedules = [
     {
-      "time_start": "13:00",
-      "time_end": "14:30",
-      "title": "해야 할 일",
-      "description":
-          "세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정",
-      "isImportant": true,
+      'time_start': '16:00',
+      'time_end': '14:30',
+      'title': '해야 할 일',
+      'description':
+          '세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정',
+      'isImportant': true,
     },
     {
-      "time_start": "15:00",
-      "time_end": "16:30",
-      "title": "해야 할 일",
-      "description": "세부 설정 세부 설정 세부 설정 세부 설정 세부 설정",
-      "isImportant": false,
+      'time_start': '15:00',
+      'time_end': '16:30',
+      'title': '해야 할 일',
+      'description': '세부 설정 세부 설정 세부 설정 세부 설정 세부 설정',
+      'isImportant': false,
     },
     {
-      "time_start": "19:00",
-      "time_end": "20:30",
-      "title": "해야 할 일",
-      "description": "세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정",
-      "isImportant": false,
+      'time_start': '19:00',
+      'time_end': '20:30',
+      'title': '해야 할 일',
+      'description': '세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정 세부 설정',
+      'isImportant': false,
     },
     // 더 많은 더미 데이터 추가 가능
   ];
@@ -47,27 +48,69 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     super.initState();
     _generateWeekDays();
     // 선택된 날짜가 화면 중앙에 오도록 스크롤 위치 조정
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_weekDays.isNotEmpty && _dateScrollController.hasClients) {
-        int selectedIndex = _weekDays.indexWhere(
-          (day) =>
-              day.year == _selectedDate.year &&
-              day.month == _selectedDate.month &&
-              day.day == _selectedDate.day,
-        );
-        if (selectedIndex != -1) {
-          double itemWidth = 50.0 + 8.0; // 아이템 너비 + 마진
-          double containerWidth = MediaQuery.of(context).size.width;
-          double offset =
-              (selectedIndex * itemWidth) -
-              (containerWidth / 2) +
-              (itemWidth / 2);
-          _dateScrollController.jumpTo(
-            offset.clamp(0.0, _dateScrollController.position.maxScrollExtent),
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (_weekDays.isNotEmpty && _dateScrollController.hasClients) {
+          int selectedIndex = _weekDays.indexWhere(
+            (day) =>
+                day.year == _selectedDate.year &&
+                day.month == _selectedDate.month &&
+                day.day == _selectedDate.day,
           );
+          if (selectedIndex != -1) {
+            double itemWidth = 50.0 + 8.0; // 아이템 너비 + 마진
+            double containerWidth = MediaQuery.of(context).size.width;
+            double offset =
+                (selectedIndex * itemWidth) -
+                (containerWidth / 2) +
+                (itemWidth / 2);
+            _dateScrollController.jumpTo(
+              offset.clamp(0.0, _dateScrollController.position.maxScrollExtent),
+            );
+          }
         }
+      } catch (e, stack) {
+        print('🛑 스크롤 위치 조정 중 오류 발생: $e');
+        print(stack);
       }
     });
+
+    initSchedules();
+  }
+
+  bool _isLoading = false;
+
+  void initSchedules() async {
+    print('========= initSchedules called ========');
+    print('initSchedules called with date: $_selectedDate');
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final list = await ScheduleApi.instance.getScheduleByDate(_selectedDate);
+
+      setState(() {
+        _schedules =
+            list.map((e) {
+              return {
+                'time_start': DateFormat.Hm('ko_KR').format(e.startAt),
+                'time_end': DateFormat.Hm('ko_KR').format(e.endAt),
+                'title': e.title,
+                'description': e.context,
+                'isImportant': e.isAllDay, // 예시로 isAllDay를 중요 표시로 사용
+              };
+            }).toList();
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      print(e);
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -92,14 +135,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  void _onDateSelected(DateTime date) {
+  void _onDateSelected(DateTime date) async {
     if (!mounted) return;
-    setState(() {
-      _selectedDate = date;
-      // 선택된 날짜가 변경되면 주간 날짜 목록을 다시 생성할 필요는 없음 (스크롤로 이동)
-      // _generateWeekDays();
-      // TODO: 선택된 날짜에 맞는 실제 일정 데이터를 로드하는 로직 추가
-    });
+    _selectedDate = date;
+
+    // 날짜 변경 시, 일정 리스트 배열 초기화
+    initSchedules();
   }
 
   Widget _buildScheduleScreenHeader() {
