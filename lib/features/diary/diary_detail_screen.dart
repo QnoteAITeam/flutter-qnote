@@ -276,10 +276,12 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
               const _SectionLabel('날짜'),
               DateSelectorWidget(
                 selectedDate: _selectedDate,
-                onDateTap: () => _selectDate(context),
+                onDateTap:  widget.diaryToEdit != null
+                    ? null
+                    : () => _selectDate(context),
                 fieldBackgroundColor: _fieldBackgroundColor,
                 fieldFontSize: _fieldFontSize,
-                showCalendarIcon: true,
+                showCalendarIcon: widget.diaryToEdit == null,
               ),
               const SizedBox(height: 18),
               const _SectionLabel('내용'),
