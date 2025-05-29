@@ -108,6 +108,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
     if (mounted) setState(() => _isLoadingPage = true);
     bool isLoggedIn = false;
+
+    await AuthApi.getInstance.checkTokenAndRedirectIfNeeded();
+
     try {
       String? token = await AuthApi.getInstance.getAccessTokenHeader();
       isLoggedIn = token != null && token.isNotEmpty;
@@ -285,42 +288,47 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _handleCalendarDateTap(DateTapDetails details) {
-
     final now = DateTime.now().add(const Duration(hours: 9));
     final todayDate = DateTime(now.year, now.month, now.day);
-    final tappedDate = DateTime(details.date.year, details.date.month, details.date.day);
+    final tappedDate = DateTime(
+      details.date.year,
+      details.date.month,
+      details.date.day,
+    );
 
-      Diary? tappedDiary;
-      for (var diary in _cachedDiaries) {
-        if (diary.createdAt != null) {
-          final diaryDatePlus9 = diary.createdAt!.add(const Duration(hours: 9));
-          final diaryDateOnly = DateTime(
-            diaryDatePlus9.year,
-            diaryDatePlus9.month,
-            diaryDatePlus9.day,
-          );
-          if (_isSameDay(diaryDateOnly, tappedDate)) {
-            tappedDiary = diary;
-            break;
-          }
+    Diary? tappedDiary;
+    for (var diary in _cachedDiaries) {
+      if (diary.createdAt != null) {
+        final diaryDatePlus9 = diary.createdAt!.add(const Duration(hours: 9));
+        final diaryDateOnly = DateTime(
+          diaryDatePlus9.year,
+          diaryDatePlus9.month,
+          diaryDatePlus9.day,
+        );
+        if (_isSameDay(diaryDateOnly, tappedDate)) {
+          tappedDiary = diary;
+          break;
         }
       }
+    }
 
-        FocusScope.of(context).unfocus();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DiaryDetailScreen(diaryToEdit: tappedDiary,
+    FocusScope.of(context).unfocus();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => DiaryDetailScreen(
+              diaryToEdit: tappedDiary,
               initialDate: tappedDiary == null ? tappedDate : null,
             ),
-          ),
-        ).then((returnedValue) {
-          FocusScope.of(context).unfocus();
-          if (returnedValue is Diary || returnedValue == true) {
-            _initializeScreenAndUserData(forceRefresh: true);
-          }
-        });
+      ),
+    ).then((returnedValue) {
+      FocusScope.of(context).unfocus();
+      if (returnedValue is Diary || returnedValue == true) {
+        _initializeScreenAndUserData(forceRefresh: true);
       }
+    });
+  }
 
   void _navigateToNewDiaryViaChat() {
     if (mounted) {

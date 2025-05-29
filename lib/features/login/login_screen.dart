@@ -36,13 +36,15 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   void _onPressedSignUp() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) {
-          return const TermsAgreementScreen();
-        },
-      ),
-    );
+    Navigator.of(context).pop('회원가입');
+
+    // Navigator.of(context).pushReplacement(
+    //   MaterialPageRoute(
+    //     builder: (context) {
+    //       return const TermsAgreementScreen();
+    //     },
+    //   ),
+    // );
   }
 
   void _onPressedFindEmail() {
@@ -101,17 +103,18 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
 
-    if (isSuccess && mounted) { // 로그인 성공 및 위젯 마운트 확인
+    if (isSuccess && mounted) {
+      // 로그인 성공 및 위젯 마운트 확인
       print("Email login successful. Navigating to DashboardScreen.");
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const DashboardScreen()),
-            (Route<dynamic> route) => false, // 모든 이전 라우트 제거
+        (Route<dynamic> route) => false, // 모든 이전 라우트 제거
       );
     } else if (!isSuccess && mounted) {
       // isSuccess가 false이지만 mounted된 경우 (예: API가 false 반환)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이메일 또는 비밀번호가 일치하지 않습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이메일 또는 비밀번호가 일치하지 않습니다.')));
     }
   }
 

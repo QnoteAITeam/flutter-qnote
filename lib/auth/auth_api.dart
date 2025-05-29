@@ -260,6 +260,11 @@ class AuthApi {
     print('CheckTokenAndRedirectIfNeeded: isValid = $isValid');
 
     // 만약 유효하지 않다면, 로그인 화면으로 리다이렉트
-    if (!isValid) await navigatorKey.currentState?.pushNamed('/login');
+    if (isValid) return;
+    final response = await navigatorKey.currentState?.pushNamed('/login');
+    if (response == '회원가입') {
+      await navigatorKey.currentState?.pushNamed('/agreement');
+      await navigatorKey.currentState?.pushNamed('/signup');
+    }
   }
 }

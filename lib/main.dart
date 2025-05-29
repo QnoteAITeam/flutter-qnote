@@ -1,7 +1,10 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_qnote/features/dashboard/dashboard_screen.dart';
 import 'package:flutter_qnote/features/login/login_screen.dart';
+import 'package:flutter_qnote/features/login/signup_screen.dart';
+import 'package:flutter_qnote/features/login/terms_agreement_screen.dart';
 // import 'package:flutter_qnote/features/login/terms_agreement_screen.dart'; // 현재 사용 안 함
 import 'package:flutter_qnote/features/splash/splash_screen.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk_share.dart';
@@ -34,6 +37,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
+        '/agreement': (context) => const TermsAgreementScreen(), // 로그인 화면으로 대체
+        '/signup': (context) => const SignupScreen(), // 회원가입 화면으로 대체
+        '/dashboard': (context) => const DashboardScreen(), // 대시보드 화면으로 대체
       },
 
       title: 'Qnote',

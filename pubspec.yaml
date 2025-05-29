@@ -35,6 +35,9 @@ flutter:
     - assets/images/qnote_icon.png
     - assets/images/google_login_large_wide.png
     - assets/images/ai_avatar.png
+    - assets/images/intro_1.png
+    - assets/images/intro_2.png
+    - assets/images/intro_3.png
     - .env
 
   fonts:
