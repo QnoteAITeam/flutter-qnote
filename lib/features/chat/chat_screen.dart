@@ -28,7 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _isCreatingSession = true;
   bool _isAiResponding = false;
-  bool _isOptionLoading = false; // 옵션 리스트 로딩 상태 추가
+  bool _isOptionLoading = false;
   final List<SendMessageDto> _chatMessages = [];
 
   String? _diarySummaryForButton;
@@ -38,6 +38,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   ChatSession? _currentSession;
   List<String> _currentChatOptions = [];
+
+  // === 캐시 변수 추가 ===
+  List<String>? _cachedChatOptions;
 
   static const Widget smallAiAvatar = CircleAvatar(
     radius: 12,
@@ -70,6 +73,9 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _initializeChatSession() async {
     if (!mounted) return;
     setStateIfMounted(() => _isCreatingSession = true);
+
+    // === 세션 초기화 시 캐시도 초기화 ===
+    _cachedChatOptions = null;
 
     try {
       final ChatSession newSession =
@@ -150,7 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
         setStateIfMounted(() {
           _chatMessages.add(aiResponse);
         });
-        await _fetchPredictedAnswers(); // 옵션 리스트 새로고침
+        await _fetchPredictedAnswers();
       }
     } catch (_) {
       if (mounted) {
@@ -176,25 +182,37 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // 옵션 리스트를 API에서 받아와서 상태에 저장 (고정 키워드 추가)
+  // === 캐시 적용된 옵션 리스트 불러오기 ===
   Future<void> _fetchPredictedAnswers() async {
+    // 캐시가 있으면 우선 보여주기
+    if (_cachedChatOptions != null && _cachedChatOptions!.isNotEmpty) {
+      setStateIfMounted(() {
+        _currentChatOptions = List.from(_cachedChatOptions!);
+      });
+    }
     setStateIfMounted(() {
       _isOptionLoading = true;
     });
     try {
       final apiList = await DiaryApi.instance.getUserPredictedAnswerMostSession();
       if (_chatMessages.length == 1 && _chatMessages.first.role == MessageRole.assistance) {
-        // 첫 인삿말만 있을 때는 옵션 리스트를 비움
-        _currentChatOptions = [];
+        setStateIfMounted(() {
+          _currentChatOptions = [];
+          _cachedChatOptions = [];
+        });
       } else {
-        _currentChatOptions = [
-          ...apiList,
-          '이제 일기를 작성해줘',
-        ];
+        setStateIfMounted(() {
+          _currentChatOptions = [
+            ...apiList,
+            '바로 일기를 작성해줘',
+          ];
+          _cachedChatOptions = List.from(_currentChatOptions); // 캐시 갱신
+        });
       }
     } catch (_) {
       setStateIfMounted(() {
         _currentChatOptions = ['이제 일기를 작성해줘'];
+        _cachedChatOptions = List.from(_currentChatOptions);
       });
     } finally {
       setStateIfMounted(() {
@@ -272,7 +290,6 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
-
     if (!mounted) return;
     _chatFocusNode.unfocus();
     FocusScope.of(context).unfocus();
