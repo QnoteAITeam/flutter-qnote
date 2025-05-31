@@ -59,7 +59,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('로그아웃 중 오류가 발생했습니다: $e')));
+        ).showSnackBar(SnackBar(content: Text('로그아웃 중 오류가 발생했습니다: $e'),
+          behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -247,7 +250,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: '운영정책',
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('운영정책 기능은 준비 중입니다.')),
+                      const SnackBar(content: Text('운영정책 기능은 준비 중입니다.'),
+                            behavior: SnackBarBehavior.floating,
+                      ),
                     );
                   },
                 ),
@@ -262,7 +267,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: '공지사항',
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('공지사항 기능은 준비 중입니다.')),
+                      const SnackBar(content: Text('공지사항 기능은 준비 중입니다.'),
+                            behavior: SnackBarBehavior.floating
+                      ),
                     );
                   },
                 ),

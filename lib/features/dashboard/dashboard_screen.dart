@@ -58,6 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _initialDiariesFetchAttempted = false;
 
   final GlobalKey _calendarWidgetKey = GlobalKey();
+  final GlobalKey<SearchHomeScreenState> _searchHomeKey = GlobalKey<SearchHomeScreenState>();
 
   DateTime _add9Hours(DateTime date) => date.add(const Duration(hours: 9));
 
@@ -538,7 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         onRefresh: () => _initializeScreenAndUserData(forceRefresh: true),
         child: _buildHomeScreenBody(),
       ),
-      const SearchHomeScreen(), // ✅ 최근 일기 보여주는 첫 화면
+      SearchHomeScreen(key: _searchHomeKey), // ✅ 최근 일기 보여주는 첫 화면
       const ChatScreen(),
       const ScheduleScreen(),
       const ProfileScreen(),
@@ -573,6 +574,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               _initializeScreenAndUserData(
                 forceRefresh: true,
               ); // 홈 새로고침 시 일기 갱신
+            } else if (idx == 1) {
+              setState(() => _currentIndex = 1);
+              _searchHomeKey.currentState?.refresh(); // <-- 검색탭 새로고침!
             } else if (idx == 2) {
               setState(() => _currentIndex = 2); // 채팅화면 이동
             } else {

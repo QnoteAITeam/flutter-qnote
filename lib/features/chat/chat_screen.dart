@@ -132,7 +132,10 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted)
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('채팅 세션이 활성화되지 않았습니다.')));
+        ).showSnackBar(const SnackBar(content: Text('채팅 세션이 활성화되지 않았습니다.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       return;
     }
 
@@ -204,14 +207,14 @@ class _ChatScreenState extends State<ChatScreen> {
         setStateIfMounted(() {
           _currentChatOptions = [
             ...apiList,
-            '바로 일기를 작성해줘',
+            '바로 일기 정리해줘',
           ];
           _cachedChatOptions = List.from(_currentChatOptions); // 캐시 갱신
         });
       }
     } catch (_) {
       setStateIfMounted(() {
-        _currentChatOptions = ['이제 일기를 작성해줘'];
+        _currentChatOptions = ['바로 일기 정리해줘'];
         _cachedChatOptions = List.from(_currentChatOptions);
       });
     } finally {
@@ -322,7 +325,8 @@ class _ChatScreenState extends State<ChatScreen> {
         appBar: ChatAppBar(
           onInfoPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('AI 챗봇 정보 버튼 (기능 준비 중)')),
+              const SnackBar(content: Text('AI 챗봇 정보 버튼 (기능 준비 중)'),
+                    behavior: SnackBarBehavior.floating),
             );
           },
         ),
@@ -336,7 +340,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Expanded(child: _buildChatList()),
             // 옵션 리스트 영역 (입력창 위)
-            if (_currentChatOptions.isNotEmpty)
+            if (_currentChatOptions.isNotEmpty && !_showAskingZeroDiaryButton && !_isAiResponding)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -374,7 +378,9 @@ class _ChatScreenState extends State<ChatScreen> {
               onSendPressed: _onPressedSendButton,
               onAttachPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('첨부 기능은 준비 중입니다.')),
+                  const SnackBar(content: Text('첨부 기능은 준비 중입니다.'),
+                  behavior: SnackBarBehavior.floating,
+                  ),
                 );
               },
             ),

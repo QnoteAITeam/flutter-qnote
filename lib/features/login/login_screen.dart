@@ -36,15 +36,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   void _onPressedSignUp() {
-    Navigator.of(context).pop('회원가입');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const TermsAgreementScreen(),
+      ),
+    );
 
-    // Navigator.of(context).pushReplacement(
-    //   MaterialPageRoute(
-    //     builder: (context) {
-    //       return const TermsAgreementScreen();
-    //     },
-    //   ),
-    // );
   }
 
   void _onPressedFindEmail() {

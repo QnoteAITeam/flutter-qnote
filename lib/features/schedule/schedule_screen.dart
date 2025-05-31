@@ -186,7 +186,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             onPressed: () {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('일정 검색 기능 (준비 중)')));
+              ).showSnackBar(const SnackBar(content: Text('일정 검색 기능 (준비 중)'),
+                behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
           ),
         ],
@@ -329,7 +332,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         onPressed: () {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('일정 추가 기능 (준비 중)')));
+          ).showSnackBar(const SnackBar(content: Text('일정 추가 기능 (준비 중)'),
+            behavior: SnackBarBehavior.floating,
+            ),
+          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFF5F0E9),
