@@ -1,14 +1,14 @@
-##📱 Qnote 다운 후 빌드 및 실행방법
+## 📱 Qnote 앱 다운 후 빌드 및 실행방법
 
 - flutter pub get
 - flutter run
 
-##📱 Qnote env 파일 다운방법
+## 📱 Qnote env 파일 다운방법
 
 Mobile. 010-3154-0982
 Email. hhs2003@o.cnu.ac.kr 
 
-##📱 Qnote 앱 화면별 구현 및 사용 모듈 명세
+## 📱 Qnote 앱 화면별 구현 및 사용 모듈 명세
 
 ## 1. 대시보드(Dashboard) 화면
 
