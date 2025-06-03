@@ -1,14 +1,14 @@
-"1. 📱 Qnote 다운 후 빌드 및 실행방법
+##📱 Qnote 다운 후 빌드 및 실행방법
 
 - flutter pub get
 - flutter run
 
-2. 📱 Qnote env 파일 다운방법
+##📱 Qnote env 파일 다운방법
 
 Mobile. 010-3154-0982
 Email. hhs2003@o.cnu.ac.kr 
 
-3. 📱 Qnote 앱 화면별 구현 및 사용 모듈 명세
+##📱 Qnote 앱 화면별 구현 및 사용 모듈 명세
 
 ## 1. 대시보드(Dashboard) 화면
 
@@ -198,4 +198,4 @@ Email. hhs2003@o.cnu.ac.kr
 - DTO, 모델, API, 인증 등은 별도 디렉터리로 관리하여 유지보수성 향상
 - 전역 상태/인증/네비게이션 등은 싱글턴 패턴 및 Provider 등 상태관리 도구 활용
 
----"
+---
