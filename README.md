@@ -5,8 +5,8 @@
 
 ## 📱 Qnote env 파일 다운방법
 
-Mobile. 010-3154-0982
-Email. hhs2003@o.cnu.ac.kr 
+- Mobile. 010-3154-0982
+- Email. hhs2003@o.cnu.ac.kr 
 
 ## 📱 Qnote 앱 화면별 구현 및 사용 모듈 명세
 
